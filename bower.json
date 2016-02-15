@@ -17,7 +17,7 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "nittro-core": "^2.0.0"
+        "nittro-core": "^1.9.1"
     },
     "ignore": [
         "**/.*",
