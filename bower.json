@@ -1,0 +1,29 @@
+{
+    "name": "nittro-page",
+    "homepage": "http://www.nittro.org",
+    "authors": [
+        "Dan Kadera <me@subsonic.cz>"
+    ],
+    "description": "Nittro is a client-side companion for the Nette PHP framework",
+    "repository": {
+        "type": "vcs",
+        "url": "git://github.com/nittro/page.git"
+    },
+    "keywords": [
+        "nittro",
+        "nette",
+        "javascript",
+        "ajax"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "nittro-core": "^2.0.0"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "test",
+        "tests"
+    ]
+}
