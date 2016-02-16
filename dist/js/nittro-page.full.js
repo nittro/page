@@ -1,3 +1,322 @@
+(function () {
+  global = this
+
+  var queueId = 1
+  var queue = {}
+  var isRunningTask = false
+
+  if (!global.setImmediate)
+    global.addEventListener('message', function (e) {
+      if (e.source == global){
+        if (isRunningTask)
+          nextTick(queue[e.data])
+        else {
+          isRunningTask = true
+          try {
+            queue[e.data]()
+          } catch (e) {}
+
+          delete queue[e.data]
+          isRunningTask = false
+        }
+      }
+    })
+
+  function nextTick(fn) {
+    if (global.setImmediate) setImmediate(fn)
+    // if inside of web worker
+    else if (global.importScripts) setTimeout(fn)
+    else {
+      queueId++
+      queue[queueId] = fn
+      global.postMessage(queueId, '*')
+    }
+  }
+
+  Deferred.resolve = function (value) {
+    if (!(this._d == 1))
+      throw TypeError()
+
+    if (value instanceof Deferred)
+      return value
+
+    return new Deferred(function (resolve) {
+        resolve(value)
+    })
+  }
+
+  Deferred.reject = function (value) {
+    if (!(this._d == 1))
+      throw TypeError()
+
+    return new Deferred(function (resolve, reject) {
+        reject(value)
+    })
+  }
+
+  Deferred.all = function (arr) {
+    if (!(this._d == 1))
+      throw TypeError()
+
+    if (!(arr instanceof Array))
+      return Deferred.reject(TypeError())
+
+    var d = new Deferred()
+
+    function done(e, v) {
+      if (v)
+        return d.resolve(v)
+
+      if (e)
+        return d.reject(e)
+
+      var unresolved = arr.reduce(function (cnt, v) {
+        if (v && v.then)
+          return cnt + 1
+        return cnt
+      }, 0)
+
+      if(unresolved == 0)
+        d.resolve(arr)
+
+      arr.map(function (v, i) {
+        if (v && v.then)
+          v.then(function (r) {
+            arr[i] = r
+            done()
+            return r
+          }, done)
+      })
+    }
+
+    done()
+
+    return d
+  }
+
+  Deferred.race = function (arr) {
+    if (!(this._d == 1))
+      throw TypeError()
+
+    if (!(arr instanceof Array))
+      return Deferred.reject(TypeError())
+
+    if (arr.length == 0)
+      return new Deferred()
+
+    var d = new Deferred()
+
+    function done(e, v) {
+      if (v)
+        return d.resolve(v)
+
+      if (e)
+        return d.reject(e)
+
+      var unresolved = arr.reduce(function (cnt, v) {
+        if (v && v.then)
+          return cnt + 1
+        return cnt
+      }, 0)
+
+      if(unresolved == 0)
+        d.resolve(arr)
+
+      arr.map(function (v, i) {
+        if (v && v.then)
+          v.then(function (r) {
+            done(null, r)
+          }, done)
+      })
+    }
+
+    done()
+
+    return d
+  }
+
+  Deferred._d = 1
+
+
+  /**
+   * @constructor
+   */
+  function Deferred(resolver) {
+    'use strict'
+    if (typeof resolver != 'function' && resolver != undefined)
+      throw TypeError()
+
+    if (typeof this != 'object' || (this && this.then))
+      throw TypeError()
+
+    // states
+    // 0: pending
+    // 1: resolving
+    // 2: rejecting
+    // 3: resolved
+    // 4: rejected
+    var self = this,
+      state = 0,
+      val = 0,
+      next = [],
+      fn, er;
+
+    self['promise'] = self
+
+    self['resolve'] = function (v) {
+      fn = self.fn
+      er = self.er
+      if (!state) {
+        val = v
+        state = 1
+
+        nextTick(fire)
+      }
+      return self
+    }
+
+    self['reject'] = function (v) {
+      fn = self.fn
+      er = self.er
+      if (!state) {
+        val = v
+        state = 2
+
+        nextTick(fire)
+
+      }
+      return self
+    }
+
+    self['_d'] = 1
+
+    self['then'] = function (_fn, _er) {
+      if (!(this._d == 1))
+        throw TypeError()
+
+      var d = new Deferred()
+
+      d.fn = _fn
+      d.er = _er
+      if (state == 3) {
+        d.resolve(val)
+      }
+      else if (state == 4) {
+        d.reject(val)
+      }
+      else {
+        next.push(d)
+      }
+
+      return d
+    }
+
+    self['catch'] = function (_er) {
+      return self['then'](null, _er)
+    }
+
+    var finish = function (type) {
+      state = type || 4
+      next.map(function (p) {
+        state == 3 && p.resolve(val) || p.reject(val)
+      })
+    }
+
+    try {
+      if (typeof resolver == 'function')
+        resolver(self['resolve'], self['reject'])
+    } catch (e) {
+      self['reject'](e)
+    }
+
+    return self
+
+    // ref : reference to 'then' function
+    // cb, ec, cn : successCallback, failureCallback, notThennableCallback
+    function thennable (ref, cb, ec, cn) {
+      // Promises can be rejected with other promises, which should pass through
+      if (state == 2) {
+        return cn()
+      }
+      if ((typeof val == 'object' || typeof val == 'function') && typeof ref == 'function') {
+        try {
+
+          // cnt protects against abuse calls from spec checker
+          var cnt = 0
+          ref.call(val, function (v) {
+            if (cnt++) return
+            val = v
+            cb()
+          }, function (v) {
+            if (cnt++) return
+            val = v
+            ec()
+          })
+        } catch (e) {
+          val = e
+          ec()
+        }
+      } else {
+        cn()
+      }
+    };
+
+    function fire() {
+
+      // check if it's a thenable
+      var ref;
+      try {
+        ref = val && val.then
+      } catch (e) {
+        val = e
+        state = 2
+        return fire()
+      }
+
+      thennable(ref, function () {
+        state = 1
+        fire()
+      }, function () {
+        state = 2
+        fire()
+      }, function () {
+        try {
+          if (state == 1 && typeof fn == 'function') {
+            val = fn(val)
+          }
+
+          else if (state == 2 && typeof er == 'function') {
+            val = er(val)
+            state = 1
+          }
+        } catch (e) {
+          val = e
+          return finish()
+        }
+
+        if (val == self) {
+          val = TypeError()
+          finish()
+        } else thennable(ref, function () {
+            finish(3)
+          }, finish, function () {
+            finish(state == 1 && 3)
+          })
+
+      })
+    }
+
+
+  }
+
+  // Export our library object, either for node.js or as a globally scoped variable
+  if (typeof module != 'undefined') {
+    module['exports'] = Deferred
+  } else {
+    global['Promise'] = global['Promise'] || Deferred
+  }
+})()
+;
 var _context = (function() {
     var t = {},
         api,
@@ -3534,538 +3853,19 @@ _context.invoke('Nittro.Page', function (DOM) {
     DOM: 'Utils.DOM'
 });
 ;
-_context.invoke('Nittro.Page', function (DOM) {
+_context.invoke('Nittro.Page', function (Snippet, DOM) {
 
-    var Transitions = _context.extend(function(duration) {
+    var SnippetManager = _context.extend(function (reportPhase) {
         this._ = {
-            duration: duration || false,
-            ready: true,
-            queue: [],
-            support: false,
-            property: null
+            snippets: {},
+            currentPhase: Snippet.INACTIVE,
+            formLocator: null,
+            reportPhase: reportPhase
         };
-
-        try {
-            var s = DOM.create('span').style;
-
-            this._.support = [
-                'transition',
-                'WebkitTransition',
-                'MozTransition',
-                'msTransition',
-                'OTransition'
-            ].some(function(prop) {
-                if (prop in s) {
-                    this._.property = prop;
-                    return true;
-                }
-            }.bind(this));
-
-            s = null;
-
-        } catch (e) { }
-
     }, {
-        transitionOut: function (elements) {
-            return this._begin(elements, 'transition-out');
-
-        },
-
-        transitionIn: function (elements) {
-            return this._begin(elements, 'transition-in');
-
-        },
-
-        _begin: function (elements, className) {
-            if (!this._.support || !this._.duration || !elements.length) {
-                return Promise.resolve(elements);
-
-            } else {
-                return this._resolve(elements, className);
-
-            }
-        },
-
-        _resolve: function (elements, className) {
-            if (!this._.ready) {
-                return new Promise(function (resolve) {
-                    this._.queue.push([elements, className, resolve]);
-
-                }.bind(this));
-            }
-
-            this._.ready = false;
-
-            if (className === 'transition-in') {
-                var foo = window.pageXOffset; // needed to force layout and thus run asynchronously
-
-            }
-
-            DOM.addClass(elements, 'transition-active ' + className);
-            DOM.removeClass(elements, 'transition-middle');
-
-            var duration = this._getDuration(elements);
-
-            var promise = new Promise(function (resolve) {
-                window.setTimeout(function () {
-                    DOM.removeClass(elements, 'transition-active ' + className);
-
-                    if (className === 'transition-out') {
-                        DOM.addClass(elements, 'transition-middle');
-
-                    }
-
-                    this._.ready = true;
-
-                    resolve(elements);
-
-                }.bind(this), duration);
-            }.bind(this));
-
-            promise.then(function () {
-                if (this._.queue.length) {
-                    var q = this._.queue.shift();
-
-                    this._resolve(q[0], q[1]).then(function () {
-                        q[2](q[0]);
-
-                    });
-                }
-            }.bind(this));
-
-            return promise;
-
-        },
-
-        _getDuration: function (elements) {
-            if (!window.getComputedStyle) {
-                return this._.duration;
-
-            }
-
-            var durations = [],
-                prop = this._.property + 'Duration';
-
-            elements.forEach(function (elem) {
-                var duration = window.getComputedStyle(elem)[prop];
-
-                if (duration) {
-                    duration = (duration + '').trim().split(/\s*,\s*/g).map(function (v) {
-                        v = v.match(/^((?:\d*\.)?\d+)(m?s)$/);
-
-                        if (v) {
-                            return parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000);
-
-                        } else {
-                            return 0;
-
-                        }
-                    });
-
-                    durations.push.apply(durations, duration.filter(function(v) { return v > 0; }));
-
-                }
-            });
-
-            if (durations.length) {
-                return Math.max.apply(null, durations);
-
-            } else {
-                return this._.duration;
-
-            }
-        }
-    });
-
-    _context.register(Transitions, 'Transitions');
-
-}, {
-    DOM: 'Utils.DOM'
-});
-;
-_context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
-
-    var Service = _context.extend('Nittro.Object', function (ajax, transitions, flashMessages, options) {
-        Service.Super.call(this);
-
-        this._.ajax = ajax;
-        this._.transitions = transitions;
-        this._.flashMessages = flashMessages;
-        this._.snippets = {};
-        this._.request = null;
-        this._.transitioning = null;
-        this._.setup = false;
-        this._.currentPhase = Snippet.INACTIVE;
-        this._.currentUrl = Url.fromCurrent();
-        this._.options = Arrays.mergeTree({}, Service.defaults, options);
-
-        DOM.addListener(document, 'click', this._handleClick.bind(this));
-        DOM.addListener(document, 'submit', this._handleSubmit.bind(this));
-        DOM.addListener(window, 'popstate', this._handleState.bind(this));
-        this.on('error:default', this._showError.bind(this));
-
-        this._checkReady();
-
-    }, {
-        STATIC: {
-            defaults: {
-                whitelistRedirects: false,
-                whitelistLinks: true,
-                whitelistForms: true,
-                defaultTransition: null
-            }
-        },
-
         setFormLocator: function (formLocator) {
             this._.formLocator = formLocator;
             return this;
-
-        },
-
-        open: function (url, method, data) {
-            return this._createRequest(url, method, data);
-
-        },
-
-        openLink: function (link, evt) {
-            return this._createRequest(link.href, 'get', null, evt, link);
-
-        },
-
-        sendForm: function (form, evt) {
-            this._checkFormLocator(true);
-
-            var frm = this._.formLocator.getForm(form),
-                data = frm.serialize();
-
-            return this._createRequest(form.action, form.method, data, evt, form)
-                .then(function () {
-                    frm.reset();
-
-                });
-        },
-
-        _checkFormLocator: function (need) {
-            if (this._.formLocator) {
-                return true;
-
-            } else if (!need) {
-                return false;
-
-            }
-
-            throw new Error("Nittro/Page service: Form support wasn't enabled. Please install Nittro/Application and inject the FormLocator service using the setFormLocator() method.");
-
-        },
-
-        _handleState: function () {
-            var url = Url.fromCurrent(),
-                request;
-
-            if (url.compare(this._.currentUrl) <= Url.PART.HASH) {
-                return;
-
-            }
-
-            this._.currentUrl = url;
-            request = this._.ajax.createRequest(url);
-
-            try {
-                this._dispatchRequest(request);
-
-            } catch (e) {
-                document.location.href = url.toAbsolute();
-
-            }
-        },
-
-        _pushState: function (payload, url) {
-            if (payload.postGet) {
-                url = payload.url;
-
-            }
-
-            this._.currentUrl = Url.from(url);
-            window.history.pushState(null, payload.title || document.title, this._.currentUrl.toAbsolute());
-
-        },
-
-        _checkReady: function () {
-            if (document.readyState === 'loading') {
-                DOM.addListener(document, 'readystatechange', this._checkReady.bind(this));
-                return;
-
-            }
-
-            if (!this._.setup) {
-                this._.setup = true;
-
-                window.setTimeout(function () {
-                    this._setup();
-                    this._showHtmlFlashes();
-                    this.trigger('update');
-
-                }.bind(this), 1);
-            }
-        },
-
-        _checkLink: function (link) {
-            return this._.options.whitelistLinks ? DOM.hasClass(link, 'ajax') : !DOM.hasClass(link, 'noajax');
-
-        },
-
-        _handleClick: function (evt) {
-            if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey) {
-                return;
-
-            }
-
-            if (this._checkFormLocator() && this._handleButton(evt)) {
-                return;
-
-            }
-
-            var link = DOM.closest(evt.target, 'a'),
-                url;
-
-            if (!link || !this._checkLink(link)) {
-                return;
-
-            }
-
-            url = Url.from(link.href);
-
-            if (!url.isLocal() || url.compare() === Url.PART.HASH) {
-                return;
-
-            }
-
-            this.openLink(link, evt);
-
-        },
-
-        _checkForm: function (form) {
-            return this._.options.whitelistForms ? DOM.hasClass(form, 'ajax') : !DOM.hasClass(form, 'noajax');
-
-        },
-
-        _handleButton: function(evt) {
-            var btn = DOM.closest(evt.target, 'button') || DOM.closest(evt.target, 'input'),
-                frm;
-
-            if (btn && btn.type === 'submit') {
-                if (btn.form && this._checkForm(btn.form)) {
-                    frm = this._.formLocator.getForm(btn.form);
-                    frm.setSubmittedBy(btn.name || null);
-
-                }
-
-                return true;
-
-            }
-        },
-
-        _handleSubmit: function (evt) {
-            if (evt.defaultPrevented || !this._checkFormLocator()) {
-                return;
-
-            }
-
-            if (!(evt.target instanceof HTMLFormElement) || !this._checkForm(evt.target)) {
-                return;
-
-            }
-
-            this.sendForm(evt.target, evt);
-
-        },
-
-        _createRequest: function (url, method, data, evt, context) {
-            if (this._.request) {
-                this._.request.abort();
-
-            }
-
-            var request = this._.ajax.createRequest(url, method, data);
-
-            try {
-                var p = this._dispatchRequest(request, context, true);
-                evt && evt.preventDefault();
-                return p;
-
-            } catch (e) {
-                return Promise.reject(e);
-
-            }
-        },
-
-        _dispatchRequest: function (request, elem, pushState) {
-            this._.request = request;
-
-            var xhr = this._.ajax.dispatch(request); // may throw exception
-
-            var transitionTargets,
-                removeTarget = null,
-                transition = null;
-
-            if (elem) {
-                transitionTargets = this._getTransitionTargets(elem);
-                removeTarget = this._getRemoveTarget(elem);
-
-                if (removeTarget) {
-                    DOM.addClass(removeTarget, 'transition-remove');
-                    transitionTargets.push(removeTarget);
-
-                }
-
-                transition = this._.transitions.transitionOut(transitionTargets);
-                this._.transitioning = transitionTargets;
-
-            }
-
-            var p = Promise.all([xhr, transition, removeTarget, pushState || false]);
-            p.then(this._handleResponse.bind(this), this._handleError.bind(this));
-            return p;
-
-        },
-
-        _checkRedirect: function (payload) {
-            return !this._.options.whitelistRedirects !== !payload.allowAjax && Url.from(payload.redirect).isLocal();
-
-        },
-
-        _handleResponse: function (queue) {
-            if (!this._.request) {
-                this._cleanup();
-                return;
-
-            }
-
-            var response = queue[0],
-                transitionTargets = queue[1] || this._.transitioning || [],
-                removeTarget = queue[2],
-                pushState = queue[3],
-                payload = response.getPayload(),
-                data,
-                setup = {},
-                teardown = {},
-                dynamic = {},
-                id;
-
-            if (typeof payload !== 'object' || !payload) {
-                this._cleanup();
-                return;
-
-            }
-
-            data = payload && 'snippets' in payload ? payload.snippets : {};
-
-            if (payload && 'flashes' in payload) {
-                this._showFlashes(payload.flashes);
-
-            }
-
-            if (payload && 'redirect' in payload) {
-                if (this._checkRedirect(payload)) {
-                    this._dispatchRequest(this._.ajax.createRequest(payload.redirect), null, pushState);
-
-                } else {
-                    document.location.href = payload.redirect;
-
-                }
-
-                return;
-
-            } else if (pushState) {
-                this._pushState(payload || {}, this._.request.getUrl());
-
-            }
-
-            this._.request = this._.transitioning = null;
-
-            if (removeTarget) {
-                this._cleanupChildSnippets(removeTarget, teardown);
-                this._cleanupForms(removeTarget);
-
-                if (this.isSnippet(removeTarget)) {
-                    teardown[removeTarget.id] = true;
-
-                }
-            }
-
-            for (id in data) {
-                if (data.hasOwnProperty(id)) {
-                    this._prepareSnippet(id, setup, teardown, dynamic);
-
-                }
-            }
-
-            this._teardown(teardown);
-
-            if (removeTarget) {
-                transitionTargets.splice(transitionTargets.indexOf(removeTarget), 1);
-                removeTarget.parentNode.removeChild(removeTarget);
-                removeTarget = null;
-
-            }
-
-            this._setupDynamic(dynamic, data, setup, transitionTargets);
-            this._setup(setup, data);
-            this._showHtmlFlashes();
-
-            this.trigger('update', payload);
-
-            this._.transitions.transitionIn(transitionTargets)
-                .then(function () {
-                    this._cleanupDynamic(dynamic);
-
-                }.bind(this));
-
-        },
-
-        _cleanup: function () {
-            this._.request = null;
-
-            if (this._.transitioning) {
-                this._.transitions.transitionIn(this._.transitioning);
-                this._.transitioning = null;
-
-            }
-        },
-
-        _showFlashes: function (flashes) {
-            var id, i;
-
-            for (id in flashes) {
-                if (flashes.hasOwnProperty(id) && flashes[id]) {
-                    for (i = 0; i < flashes[id].length; i++) {
-                        this._.flashMessages.add(null, flashes[id][i].type, flashes[id][i].message);
-
-                    }
-                }
-            }
-        },
-
-        _showHtmlFlashes: function () {
-            var elms = DOM.getByClassName('flashes-src'),
-                i, n, data;
-
-            for (i = 0, n = elms.length; i < n; i++) {
-                data = JSON.parse(elms[i].textContent.trim());
-                elms[i].parentNode.removeChild(elms[i]);
-                this._showFlashes(data);
-
-            }
-        },
-
-        _handleError: function (err) {
-            this._cleanup();
-            this.trigger('error', err);
-
-        },
-
-        _showError: function (evt) {
-            this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
 
         },
 
@@ -4084,23 +3884,41 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
 
         },
 
-        _prepareSnippet: function (id, setup, teardown, dynamic) {
-            if (this._.snippets[id] && this._.snippets[id].getState() === Snippet.RUN_SETUP) {
-                teardown[id] = false;
+        applySnippets: function (snippets, removeTarget) {
+            var setup = {},
+                teardown = {},
+                dynamic = [];
+
+            if (removeTarget) {
+                this._cleanupChildSnippets(removeTarget, teardown);
+                this._cleanupForms(removeTarget);
+
+                if (this.isSnippet(removeTarget)) {
+                    teardown[removeTarget.id] = true;
+
+                }
+            }
+
+            this._prepareSnippets(snippets, setup, teardown, dynamic);
+            this._teardown(teardown);
+
+            if (removeTarget) {
+                removeTarget.parentNode.removeChild(removeTarget);
+                removeTarget = null;
 
             }
 
-            var snippet = DOM.getById(id);
+            this._setupDynamic(dynamic, snippets);
+            this._setup(setup, snippets);
 
-            if (snippet) {
-                this._cleanupChildSnippets(snippet, teardown);
-                this._cleanupForms(snippet);
-                setup[id] = true;
+            return dynamic;
 
-            } else {
-                dynamic[id] = true;
+        },
 
-            }
+        setup: function () {
+            this._setup();
+            return this;
+
         },
 
         _cleanupChildSnippets: function (elem, teardown) {
@@ -4113,7 +3931,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
         },
 
         _cleanupForms: function (snippet) {
-            if (!this._checkFormLocator()) {
+            if (!this._.formLocator) {
                 return;
 
             }
@@ -4132,12 +3950,45 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
             }
         },
 
+        _prepareSnippets: function (snippets, setup, teardown, dynamic) {
+            for (var id in snippets) {
+                if (snippets.hasOwnProperty(id)) {
+                    this._prepareSnippet(id, setup, teardown, dynamic);
+
+                }
+            }
+        },
+
+        _prepareSnippet: function (id, setup, teardown, dynamic) {
+            if (this._.snippets[id] && this._.snippets[id].getState() === Snippet.RUN_SETUP) {
+                teardown[id] = false;
+
+            }
+
+            var snippet = DOM.getById(id);
+
+            if (snippet) {
+                this._cleanupChildSnippets(snippet, teardown);
+                this._cleanupForms(snippet);
+
+                setup[id] = true;
+
+                if (this._isDynamic(snippet, id)) {
+                    dynamic.push([id, snippet, false]);
+
+                }
+            } else {
+                dynamic.push([id, null, false]);
+
+            }
+        },
+
         _teardown: function (snippets) {
             this._setSnippetsState(snippets, Snippet.PREPARE_TEARDOWN);
             this._setSnippetsState(snippets, Snippet.RUN_TEARDOWN);
             this._setSnippetsState(snippets, Snippet.INACTIVE);
 
-            this.trigger('teardown');
+            this._.reportPhase('teardown');
 
             for (var id in snippets) {
                 if (snippets.hasOwnProperty(id) && snippets[id]) {
@@ -4147,44 +3998,31 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
             }
         },
 
+        _setupDynamic: function (snippets, data) {
+            snippets.forEach(function (snippet) {
+                if (snippet[1] === null) {
+                    snippet[1] = this._insertDynamic(snippet[0], data[snippet[0]]);
+                    snippet[2] = true;
+
+                }
+            }.bind(this));
+        },
+
         _setup: function (snippets, data) {
             if (data) {
                 for (var id in snippets) {
-                    if (snippets.hasOwnProperty(id) && snippets[id]) {
+                    if (snippets.hasOwnProperty(id)) {
                         DOM.html(id, data[id] || '');
 
                     }
                 }
             }
 
-            this.trigger('setup');
+            this._.reportPhase('setup');
 
             this._setSnippetsState(this._.snippets, Snippet.PREPARE_SETUP);
             this._setSnippetsState(this._.snippets, Snippet.RUN_SETUP);
 
-        },
-
-        _setupDynamic: function (snippets, data, setup, transitionTargets) {
-            var id, snippet;
-
-            for (id in snippets) {
-                if (snippets.hasOwnProperty(id)) {
-                    if (snippet = this._prepareDynamic(id, data[id])) {
-                        transitionTargets.push(snippet);
-                        setup[id] = false;
-
-                    }
-                }
-            }
-        },
-
-        _cleanupDynamic: function (snippets) {
-            for (var id in snippets) {
-                if (snippets.hasOwnProperty(id)) {
-                    DOM.removeClass(DOM.getById(id), 'transition-add');
-
-                }
-            }
         },
 
         _setSnippetsState: function (snippets, state) {
@@ -4198,7 +4036,17 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
             }
         },
 
-        _prepareDynamic: function (id, data) {
+        _isDynamic: function (elem, id) {
+            if (!elem.parentNode || !DOM.hasClass(elem.parentNode, 'snippet-container')) {
+                return false;
+
+            }
+
+            return !!id.match(new RegExp('^' + DOM.getData(elem.parentNode, 'dynamicMask') + '$'));
+
+        },
+
+        _insertDynamic: function (id, data) {
             var container = null;
 
             DOM.getByClassName('snippet-container').some(function (elem) {
@@ -4212,7 +4060,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
             });
 
             if (!container) {
-                return null;
+                throw new Error('No container found for dynamic snippet ID #' + id);
 
             }
 
@@ -4220,8 +4068,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
                 insertMode = DOM.getData(container, 'dynamicInsertMode') || 'append';
 
             elem[0] = DOM.create(elem[0], {
-                id: id,
-                'class': 'transition-add'
+                id: id
             });
 
             if (elem.length > 1) {
@@ -4382,6 +4229,557 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, Snippet) {
                 container.insertBefore(snippet, children[c]);
 
             }
+        }
+    });
+
+    _context.register(SnippetManager, 'SnippetManager');
+
+}, {
+    DOM: 'Utils.DOM'
+});
+;
+_context.invoke('Nittro.Page', function (DOM) {
+
+    var Transitions = _context.extend(function(duration) {
+        this._ = {
+            duration: duration || false,
+            ready: true,
+            queue: [],
+            support: false,
+            property: null
+        };
+
+        try {
+            var s = DOM.create('span').style;
+
+            this._.support = [
+                'transition',
+                'WebkitTransition',
+                'MozTransition',
+                'msTransition',
+                'OTransition'
+            ].some(function(prop) {
+                if (prop in s) {
+                    this._.property = prop;
+                    return true;
+                }
+            }.bind(this));
+
+            s = null;
+
+        } catch (e) { }
+
+    }, {
+        transitionOut: function (elements) {
+            return this._begin(elements, 'transition-out');
+
+        },
+
+        transitionIn: function (elements) {
+            return this._begin(elements, 'transition-in');
+
+        },
+
+        _begin: function (elements, className) {
+            if (!this._.support || !this._.duration || !elements.length) {
+                return Promise.resolve(elements);
+
+            } else {
+                return this._resolve(elements, className);
+
+            }
+        },
+
+        _resolve: function (elements, className) {
+            if (!this._.ready) {
+                return new Promise(function (resolve) {
+                    this._.queue.push([elements, className, resolve]);
+
+                }.bind(this));
+            }
+
+            this._.ready = false;
+
+            if (className === 'transition-in') {
+                var foo = window.pageXOffset; // needed to force layout and thus run asynchronously
+
+            }
+
+            DOM.addClass(elements, 'transition-active ' + className);
+            DOM.removeClass(elements, 'transition-middle');
+
+            var duration = this._getDuration(elements);
+
+            var promise = new Promise(function (resolve) {
+                window.setTimeout(function () {
+                    DOM.removeClass(elements, 'transition-active ' + className);
+
+                    if (className === 'transition-out') {
+                        DOM.addClass(elements, 'transition-middle');
+
+                    }
+
+                    this._.ready = true;
+
+                    resolve(elements);
+
+                }.bind(this), duration);
+            }.bind(this));
+
+            promise.then(function () {
+                if (this._.queue.length) {
+                    var q = this._.queue.shift();
+
+                    this._resolve(q[0], q[1]).then(function () {
+                        q[2](q[0]);
+
+                    });
+                }
+            }.bind(this));
+
+            return promise;
+
+        },
+
+        _getDuration: function (elements) {
+            if (!window.getComputedStyle) {
+                return this._.duration;
+
+            }
+
+            var durations = [],
+                prop = this._.property + 'Duration';
+
+            elements.forEach(function (elem) {
+                var duration = window.getComputedStyle(elem)[prop];
+
+                if (duration) {
+                    duration = (duration + '').trim().split(/\s*,\s*/g).map(function (v) {
+                        v = v.match(/^((?:\d*\.)?\d+)(m?s)$/);
+
+                        if (v) {
+                            return parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000);
+
+                        } else {
+                            return 0;
+
+                        }
+                    });
+
+                    durations.push.apply(durations, duration.filter(function(v) { return v > 0; }));
+
+                }
+            });
+
+            if (durations.length) {
+                return Math.max.apply(null, durations);
+
+            } else {
+                return this._.duration;
+
+            }
+        }
+    });
+
+    _context.register(Transitions, 'Transitions');
+
+}, {
+    DOM: 'Utils.DOM'
+});
+;
+_context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snippet) {
+
+    var Service = _context.extend('Nittro.Object', function (ajax, transitions, flashMessages, options) {
+        Service.Super.call(this);
+
+        this._.ajax = ajax;
+        this._.transitions = transitions;
+        this._.flashMessages = flashMessages;
+        this._.snippetManager = new SnippetManager(this._handlePhase.bind(this));
+        this._.request = null;
+        this._.transitioning = null;
+        this._.setup = false;
+        this._.currentUrl = Url.fromCurrent();
+        this._.options = Arrays.mergeTree({}, Service.defaults, options);
+
+        DOM.addListener(document, 'click', this._handleClick.bind(this));
+        DOM.addListener(document, 'submit', this._handleSubmit.bind(this));
+        DOM.addListener(window, 'popstate', this._handleState.bind(this));
+        this.on('error:default', this._showError.bind(this));
+
+        this._checkReady();
+
+    }, {
+        STATIC: {
+            defaults: {
+                whitelistRedirects: false,
+                whitelistLinks: true,
+                whitelistForms: true,
+                defaultTransition: null
+            }
+        },
+
+        setFormLocator: function (formLocator) {
+            this._.formLocator = formLocator;
+            this._.snippetManager.setFormLocator(formLocator);
+            return this;
+
+        },
+
+        open: function (url, method, data) {
+            return this._createRequest(url, method, data);
+
+        },
+
+        openLink: function (link, evt) {
+            return this._createRequest(link.href, 'get', null, evt, link);
+
+        },
+
+        sendForm: function (form, evt) {
+            this._checkFormLocator(true);
+
+            var frm = this._.formLocator.getForm(form),
+                data = frm.serialize();
+
+            return this._createRequest(form.action, form.method, data, evt, form)
+                .then(function () {
+                    frm.reset();
+
+                });
+        },
+
+        getSnippet: function (id) {
+            return this._.snippetManager.getSnippet(id);
+
+        },
+
+        isSnippet: function (elem) {
+            return this._.snippetManager.isSnippet(elem);
+
+        },
+
+
+        _handlePhase: function (phase) {
+            this.trigger(phase);
+
+        },
+
+        _checkFormLocator: function (need) {
+            if (this._.formLocator) {
+                return true;
+
+            } else if (!need) {
+                return false;
+
+            }
+
+            throw new Error("Nittro/Page service: Form support wasn't enabled. Please install Nittro/Application and inject the FormLocator service using the setFormLocator() method.");
+
+        },
+
+        _handleState: function () {
+            var url = Url.fromCurrent(),
+                request;
+
+            if (url.compare(this._.currentUrl) <= Url.PART.HASH) {
+                return;
+
+            }
+
+            this._.currentUrl = url;
+            request = this._.ajax.createRequest(url);
+
+            try {
+                this._dispatchRequest(request);
+
+            } catch (e) {
+                document.location.href = url.toAbsolute();
+
+            }
+        },
+
+        _pushState: function (payload, url) {
+            if (payload.postGet) {
+                url = payload.url;
+
+            }
+
+            this._.currentUrl = Url.from(url);
+            window.history.pushState(null, payload.title || document.title, this._.currentUrl.toAbsolute());
+
+        },
+
+        _checkReady: function () {
+            if (document.readyState === 'loading') {
+                DOM.addListener(document, 'readystatechange', this._checkReady.bind(this));
+                return;
+
+            }
+
+            if (!this._.setup) {
+                this._.setup = true;
+
+                window.setTimeout(function () {
+                    this._.snippetManager.setup();
+                    this._showHtmlFlashes();
+                    this.trigger('update');
+
+                }.bind(this), 1);
+            }
+        },
+
+        _checkLink: function (link) {
+            return this._.options.whitelistLinks ? DOM.hasClass(link, 'ajax') : !DOM.hasClass(link, 'noajax');
+
+        },
+
+        _handleClick: function (evt) {
+            if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey) {
+                return;
+
+            }
+
+            if (this._checkFormLocator() && this._handleButton(evt)) {
+                return;
+
+            }
+
+            var link = DOM.closest(evt.target, 'a'),
+                url;
+
+            if (!link || !this._checkLink(link)) {
+                return;
+
+            }
+
+            url = Url.from(link.href);
+
+            if (!url.isLocal() || url.compare() === Url.PART.HASH) {
+                return;
+
+            }
+
+            this.openLink(link, evt);
+
+        },
+
+        _checkForm: function (form) {
+            return this._.options.whitelistForms ? DOM.hasClass(form, 'ajax') : !DOM.hasClass(form, 'noajax');
+
+        },
+
+        _handleButton: function(evt) {
+            var btn = DOM.closest(evt.target, 'button') || DOM.closest(evt.target, 'input'),
+                frm;
+
+            if (btn && btn.type === 'submit') {
+                if (btn.form && this._checkForm(btn.form)) {
+                    frm = this._.formLocator.getForm(btn.form);
+                    frm.setSubmittedBy(btn.name || null);
+
+                }
+
+                return true;
+
+            }
+        },
+
+        _handleSubmit: function (evt) {
+            if (evt.defaultPrevented || !this._checkFormLocator()) {
+                return;
+
+            }
+
+            if (!(evt.target instanceof HTMLFormElement) || !this._checkForm(evt.target)) {
+                return;
+
+            }
+
+            this.sendForm(evt.target, evt);
+
+        },
+
+        _createRequest: function (url, method, data, evt, context) {
+            if (this._.request) {
+                this._.request.abort();
+
+            }
+
+            var request = this._.ajax.createRequest(url, method, data);
+
+            try {
+                var p = this._dispatchRequest(request, context, true);
+                evt && evt.preventDefault();
+                return p;
+
+            } catch (e) {
+                return Promise.reject(e);
+
+            }
+        },
+
+        _dispatchRequest: function (request, elem, pushState) {
+            this._.request = request;
+
+            var xhr = this._.ajax.dispatch(request); // may throw exception
+
+            var transitionTargets,
+                removeTarget = null,
+                transition = null;
+
+            if (elem) {
+                transitionTargets = this._getTransitionTargets(elem);
+                removeTarget = this._getRemoveTarget(elem);
+
+                if (removeTarget) {
+                    DOM.addClass(removeTarget, 'dynamic-remove');
+                    transitionTargets.push(removeTarget);
+
+                }
+
+                transition = this._.transitions.transitionOut(transitionTargets);
+                this._.transitioning = transitionTargets;
+
+            }
+
+            var p = Promise.all([xhr, transition, removeTarget, pushState || false]);
+            p.then(this._handleResponse.bind(this), this._handleError.bind(this));
+            return p;
+
+        },
+
+        _handleResponse: function (queue) {
+            if (!this._.request) {
+                this._cleanup();
+                return;
+
+            }
+
+            var response = queue[0],
+                transitionTargets = queue[1] || this._.transitioning || [],
+                removeTarget = queue[2],
+                pushState = queue[3],
+                payload = response.getPayload();
+
+            if (typeof payload !== 'object' || !payload) {
+                this._cleanup();
+                return;
+
+            }
+
+            this._showFlashes(payload.flashes);
+
+            if (this._tryRedirect(payload)) {
+                return;
+
+            } else if (pushState) {
+                this._pushState(payload || {}, this._.request.getUrl());
+
+            }
+
+            this._.request = this._.transitioning = null;
+            removeTarget && transitionTargets.pop();
+
+            var dynamic = this._.snippetManager.applySnippets(payload.snippets || {}, removeTarget);
+            this._transitionDynamic(dynamic, transitionTargets);
+
+            this._showHtmlFlashes();
+
+            this.trigger('update', payload);
+
+            this._.transitions.transitionIn(transitionTargets)
+                .then(function () {
+                    this._cleanupDynamic(dynamic);
+
+                }.bind(this));
+
+            return payload;
+
+        },
+
+        _checkRedirect: function (payload) {
+            return !this._.options.whitelistRedirects !== !payload.allowAjax && Url.from(payload.redirect).isLocal();
+
+        },
+
+        _tryRedirect: function (payload) {
+            if ('redirect' in payload) {
+                if (this._checkRedirect(payload)) {
+                    this._dispatchRequest(this._.ajax.createRequest(payload.redirect), null, pushState);
+
+                } else {
+                    document.location.href = payload.redirect;
+
+                }
+
+                return true;
+
+            }
+        },
+
+        _cleanup: function () {
+            this._.request = null;
+
+            if (this._.transitioning) {
+                this._.transitions.transitionIn(this._.transitioning);
+                this._.transitioning = null;
+
+            }
+        },
+
+        _transitionDynamic: function (snippets, transitionTargets) {
+            snippets.forEach(function (snippet) {
+                DOM.addClass(snippet[1], snippet[2] ? 'dynamic-add' : 'dynamic-update');
+                transitionTargets.push(snippet[1]);
+            });
+        },
+
+        _cleanupDynamic: function (snippets) {
+            snippets.forEach(function (snippet) {
+                DOM.removeClass(snippet[1], snippet[2] ? 'dynamic-add' : 'dynamic-update');
+            });
+        },
+
+        _showFlashes: function (flashes) {
+            if (!flashes) {
+                return;
+
+            }
+
+            var id, i;
+
+            for (id in flashes) {
+                if (flashes.hasOwnProperty(id) && flashes[id]) {
+                    for (i = 0; i < flashes[id].length; i++) {
+                        this._.flashMessages.add(null, flashes[id][i].type, flashes[id][i].message);
+
+                    }
+                }
+            }
+        },
+
+        _showHtmlFlashes: function () {
+            var elms = DOM.getByClassName('flashes-src'),
+                i, n, data;
+
+            for (i = 0, n = elms.length; i < n; i++) {
+                data = JSON.parse(elms[i].textContent.trim());
+                elms[i].parentNode.removeChild(elms[i]);
+                this._showFlashes(data);
+
+            }
+        },
+
+        _handleError: function (err) {
+            this._cleanup();
+            this.trigger('error', err);
+
+        },
+
+        _showError: function (evt) {
+            this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
+
         },
 
         _getTransitionTargets: function (elem) {

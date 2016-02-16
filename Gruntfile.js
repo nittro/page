@@ -7,6 +7,7 @@ module.exports = function (grunt) {
         'src/js/Nittro/Ajax/Service.js',
         'src/js/Nittro/Ajax/Transport/Native.js',
         'src/js/Nittro/Page/Snippet.js',
+        'src/js/Nittro/Page/SnippetManager.js',
         'src/js/Nittro/Page/Transitions.js',
         'src/js/Nittro/Page/Service.js',
         'src/js/Nittro/Widgets/FlashMessages.js'
@@ -75,12 +76,33 @@ module.exports = function (grunt) {
                     ]
                 }
             }
+        },
+
+        jasmine: {
+            src: NittroPage.concat(
+                'tests/mocks/Ajax.js',
+                'tests/mocks/FlashMessages.js'
+            ),
+            options: {
+                styles: [
+                    'dist/css/nittro-page.css'
+                ],
+                vendor: [
+                    'bower_components/promiz/promiz.min.js',
+                    'bower_components/nittro-core/dist/js/nittro-core.js'
+                ],
+                specs: 'tests/specs/**.spec.js'/*,
+                display: 'short',
+                summary: true*/
+            }
         }
     });
 
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-less');
+    grunt.loadNpmTasks('grunt-contrib-jasmine');
     grunt.registerTask('default', ['uglify', 'concat', 'less']);
+    grunt.registerTask('test', ['jasmine']);
 
 };
