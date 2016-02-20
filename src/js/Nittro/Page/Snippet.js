@@ -1,9 +1,11 @@
-_context.invoke('Nittro.Page', function (DOM) {
+_context.invoke('Nittro.Page', function (DOM, undefined) {
 
     var Snippet = _context.extend(function (id, state) {
         this._ = {
             id: id,
+            container: false,
             state: typeof state === 'number' ? state : Snippet.INACTIVE,
+            data: {},
             handlers: [
                 [], [], [], []
             ]
@@ -15,6 +17,11 @@ _context.invoke('Nittro.Page', function (DOM) {
             RUN_SETUP: 1,
             PREPARE_TEARDOWN: 2,
             RUN_TEARDOWN: 3
+        },
+
+        getId: function () {
+            return this._.id;
+
         },
 
         setup: function (prepare, run) {
@@ -88,7 +95,7 @@ _context.invoke('Nittro.Page', function (DOM) {
 
                 });
 
-            } else if ((this._.state + 1) % 4 === state) {
+            } else if (state - 1 === this._.state) {
                 this._.state = state;
 
                 var elm = this.getElement();
@@ -108,6 +115,28 @@ _context.invoke('Nittro.Page', function (DOM) {
 
         getState: function () {
             return this._.state;
+
+        },
+
+        getData: function (key, def) {
+            return key in this._.data ? this._.data[key] : (def === undefined ? null : def);
+
+        },
+
+        setData: function (key, value) {
+            this._.data[key] = value;
+            return this;
+
+        },
+
+        setContainer: function () {
+            this._.container = true;
+            return this;
+
+        },
+
+        isContainer: function () {
+            return this._.container;
 
         },
 

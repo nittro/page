@@ -8,7 +8,7 @@ _context.invoke(function (Page, Ajax, FlashMessages) {
 
     var page = new Page.Service(ajax, transitions, flashMessages, {
         whitelistLinks: false,
-        defaultTransition: '.transition-slide, .transition-fade'
+        defaultTransition: '.transition-auto'
     });
 
     _context.register(page, 'page');

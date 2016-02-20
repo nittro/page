@@ -1,4 +1,4 @@
-_context.invoke('Nittro.Page', function (DOM) {
+_context.invoke('Nittro.Page', function (DOM, Arrays) {
 
     var Transitions = _context.extend(function(duration) {
         this._ = {
@@ -144,5 +144,6 @@ _context.invoke('Nittro.Page', function (DOM) {
     _context.register(Transitions, 'Transitions');
 
 }, {
-    DOM: 'Utils.DOM'
+    DOM: 'Utils.DOM',
+    Arrays: 'Utils.Arrays'
 });

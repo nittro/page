@@ -1,4 +1,4 @@
-_context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snippet) {
+_context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snippet) {
 
     var Service = _context.extend('Nittro.Object', function (ajax, transitions, flashMessages, options) {
         Service.Super.call(this);
@@ -6,8 +6,10 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
         this._.ajax = ajax;
         this._.transitions = transitions;
         this._.flashMessages = flashMessages;
-        this._.snippetManager = new SnippetManager(this._handlePhase.bind(this));
         this._.request = null;
+        this._.snippets = {};
+        this._.containerCache = null;
+        this._.currentPhase = Snippet.INACTIVE;
         this._.transitioning = null;
         this._.setup = false;
         this._.currentUrl = Url.fromCurrent();
@@ -32,7 +34,6 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
 
         setFormLocator: function (formLocator) {
             this._.formLocator = formLocator;
-            this._.snippetManager.setFormLocator(formLocator);
             return this;
 
         },
@@ -61,18 +62,17 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
         },
 
         getSnippet: function (id) {
-            return this._.snippetManager.getSnippet(id);
+            if (!this._.snippets[id]) {
+                this._.snippets[id] = new Snippet(id, this._.currentPhase);
+
+            }
+
+            return this._.snippets[id];
 
         },
 
         isSnippet: function (elem) {
-            return this._.snippetManager.isSnippet(elem);
-
-        },
-
-
-        _handlePhase: function (phase) {
-            this.trigger(phase);
+            return (typeof elem === 'string' ? elem : elem.id) in this._.snippets;
 
         },
 
@@ -132,7 +132,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
                 this._.setup = true;
 
                 window.setTimeout(function () {
-                    this._.snippetManager.setup();
+                    this._setup();
                     this._showHtmlFlashes();
                     this.trigger('update');
 
@@ -235,26 +235,30 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
 
             var xhr = this._.ajax.dispatch(request); // may throw exception
 
-            var transitionTargets,
-                removeTarget = null,
-                transition = null;
+            var transitionElms,
+                removeElms,
+                transition;
 
             if (elem) {
-                transitionTargets = this._getTransitionTargets(elem);
-                removeTarget = this._getRemoveTarget(elem);
+                transitionElms = this._getTransitionTargets(elem);
+                removeElms = this._getRemoveTargets(elem);
 
-                if (removeTarget) {
-                    DOM.addClass(removeTarget, 'dynamic-remove');
-                    transitionTargets.push(removeTarget);
+                if (removeElms.length) {
+                    DOM.addClass(removeElms, 'dynamic-remove');
 
                 }
 
-                transition = this._.transitions.transitionOut(transitionTargets);
-                this._.transitioning = transitionTargets;
+                this._.transitioning = transitionElms.concat(removeElms);
+                transition = this._.transitions.transitionOut(this._.transitioning.slice());
+
+            } else {
+                transitionElms = [];
+                removeElms = [];
+                transition = null;
 
             }
 
-            var p = Promise.all([xhr, transition, removeTarget, pushState || false]);
+            var p = Promise.all([xhr, transitionElms, removeElms, pushState || false, transition]);
             p.then(this._handleResponse.bind(this), this._handleError.bind(this));
             return p;
 
@@ -263,47 +267,46 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
         _handleResponse: function (queue) {
             if (!this._.request) {
                 this._cleanup();
-                return;
+                return null;
 
             }
 
             var response = queue[0],
-                transitionTargets = queue[1] || this._.transitioning || [],
-                removeTarget = queue[2],
+                transitionElms = queue[1] || this._.transitioning || [],
+                removeElms = queue[2],
                 pushState = queue[3],
                 payload = response.getPayload();
 
             if (typeof payload !== 'object' || !payload) {
                 this._cleanup();
-                return;
+                return null;
 
             }
 
             this._showFlashes(payload.flashes);
 
-            if (this._tryRedirect(payload)) {
-                return;
+            if (this._tryRedirect(payload, pushState)) {
+                return payload;
 
             } else if (pushState) {
-                this._pushState(payload || {}, this._.request.getUrl());
+                this._pushState(payload, this._.request.getUrl());
 
             }
 
             this._.request = this._.transitioning = null;
-            removeTarget && transitionTargets.pop();
 
-            var dynamic = this._.snippetManager.applySnippets(payload.snippets || {}, removeTarget);
-            this._transitionDynamic(dynamic, transitionTargets);
+            var dynamic = this._applySnippets(payload.snippets || {}, removeElms);
+            DOM.toggleClass(dynamic, 'transition-middle', true);
 
             this._showHtmlFlashes();
 
             this.trigger('update', payload);
 
-            this._.transitions.transitionIn(transitionTargets)
+            this._.transitions.transitionIn(transitionElms.concat(dynamic))
                 .then(function () {
-                    this._cleanupDynamic(dynamic);
+                    DOM.removeClass(dynamic, 'dynamic-add dynamic-update');
 
-                }.bind(this));
+                });
 
             return payload;
 
@@ -314,7 +317,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
 
         },
 
-        _tryRedirect: function (payload) {
+        _tryRedirect: function (payload, pushState) {
             if ('redirect' in payload) {
                 if (this._checkRedirect(payload)) {
                     this._dispatchRequest(this._.ajax.createRequest(payload.redirect), null, pushState);
@@ -337,19 +340,6 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
                 this._.transitioning = null;
 
             }
-        },
-
-        _transitionDynamic: function (snippets, transitionTargets) {
-            snippets.forEach(function (snippet) {
-                DOM.addClass(snippet[1], snippet[2] ? 'dynamic-add' : 'dynamic-update');
-                transitionTargets.push(snippet[1]);
-            });
-        },
-
-        _cleanupDynamic: function (snippets) {
-            snippets.forEach(function (snippet) {
-                DOM.removeClass(snippet[1], snippet[2] ? 'dynamic-add' : 'dynamic-update');
-            });
         },
 
         _showFlashes: function (flashes) {
@@ -382,58 +372,19 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetManager, Snipp
             }
         },
 
-        _handleError: function (err) {
+        _handleError: function (evt) {
             this._cleanup();
-            this.trigger('error', err);
+            this.trigger('error', evt);
 
         },
 
         _showError: function (evt) {
             this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
 
-        },
-
-        _getTransitionTargets: function (elem) {
-            var sel = DOM.getData(elem, 'transition') || this._.options.defaultTransition,
-                elms = [];
-
-            if (!sel) {
-                return elms;
-
-            }
-
-            if (typeof sel === 'string') {
-                sel = sel.trim().split(/\s*,\s*/g);
-
-            }
-
-            sel.forEach(function (sel) {
-                if (sel.match(/^[^.#]|[\s\[>+:]/)) {
-                    throw new TypeError('Invalid transition selector, only single-level .class and #id are allowed');
-
-                }
-
-                if (sel.charAt(0) === '#') {
-                    sel = DOM.getById(sel.substr(1));
-                    sel && elms.push(sel);
-
-                } else {
-                    var matching = DOM.getByClassName(sel.substr(1));
-                    elms.push.apply(elms, matching);
-
-                }
-            });
-
-            return elms;
-
-        },
-
-        _getRemoveTarget: function (elem) {
-            var id = DOM.getData(elem, 'dynamicRemove');
-            return id ? DOM.getById(id) : null;
-
         }
     });
+
+    _context.mixin(Service, SnippetHelpers);
 
     _context.register(Service, 'Service');
 

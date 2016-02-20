@@ -4,6 +4,7 @@
 /*! @include file="Ajax/Service.js" */
 /*! @include file="Ajax/Transport/Native.js" */
 /*! @include file="Page/Snippet.js" */
+/*! @include file="Page/SnippetHelpers.js" */
 /*! @include file="Page/Transitions.js" */
 /*! @include file="Page/Service.js" */
 /*! @include file="Widgets/FlashMessages.js" */

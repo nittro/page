@@ -19,7 +19,7 @@ describe('Nittro.Page.Service', function () {
         testContainer = document.createElement('div');
         document.body.appendChild(testContainer);
 
-        testContainer.innerHTML = '<div id="snippet-test" class="transition-fade"><h2>Test snippet</h2></div>';
+        testContainer.innerHTML = '<div id="snippet-test" class="transition-fade transition-auto"><h2>Test snippet</h2></div>';
 
     });
 

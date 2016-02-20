@@ -7,7 +7,7 @@ module.exports = function (grunt) {
         'src/js/Nittro/Ajax/Service.js',
         'src/js/Nittro/Ajax/Transport/Native.js',
         'src/js/Nittro/Page/Snippet.js',
-        'src/js/Nittro/Page/SnippetManager.js',
+        'src/js/Nittro/Page/SnippetHelpers.js',
         'src/js/Nittro/Page/Transitions.js',
         'src/js/Nittro/Page/Service.js',
         'src/js/Nittro/Widgets/FlashMessages.js'
