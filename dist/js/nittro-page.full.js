@@ -1099,22 +1099,6 @@ _context.invoke('Utils', function(undefined) {
 
         },
 
-        flatten: function (a) {
-            if (!Arrays.isArray(a)) {
-                a = Arrays.createFrom(a);
-
-            }
-
-            var r = [];
-
-            a.forEach(function (a) {
-                r = r.concat(a);
-            });
-
-            return r;
-
-        },
-
         getKeys: function(a) {
             var keys = [], k;
 
@@ -2280,7 +2264,7 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
     };
 
     var getElem = function (elem) {
-        Arrays.isArrayLike(elem) && (elem = elem[0]);
+        Arrays.isArrayLike(elem) && elem !== window && (elem = elem[0]);
         return typeof elem === 'string' ? DOM.getById(elem) : elem;
 
     };
@@ -2330,8 +2314,8 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
 
         },
 
-        getById: function (id, context) {
-            return (context || document).getElementById(id);
+        getById: function (id) {
+            return document.getElementById(id);
 
         },
 
@@ -2340,23 +2324,27 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
             sel = sel.trim().split(/\s*,\s*/g);
 
             sel.forEach(function (s) {
-                if (s.match(/^[^.#]|[\s\[>+:]/)) {
-                    throw new TypeError('Invalid selector "' + s + '", only single-level .class and #id are allowed');
+                var m = s.match(/^#([^\s\[>+:\.]+)\s+\.([^\s\[>+:]+)$/);
+
+                if (m) {
+                    elems.push.apply(elems, DOM.getByClassName(m[2], DOM.getById(m[1])));
+                    return;
+
+                } else if (s.match(/^[^.#]|[\s\[>+:]/)) {
+                    throw new TypeError('Invalid selector "' + s + '", only single-level .class and #id or "#id .class" are allowed');
 
                 }
 
-                var e;
-
                 if (s.charAt(0) === '#') {
-                    e = DOM.getById(s.substr(1), context);
+                    m = DOM.getById(s.substr(1));
 
-                    if (e) {
-                        elems.push(e);
+                    if (m) {
+                        elems.push(m);
 
                     }
                 } else {
-                    e = DOM.getByClassName(s.substr(1), context);
-                    elems.push.apply(elems, e);
+                    m = DOM.getByClassName(s.substr(1), context);
+                    elems.push.apply(elems, m);
 
                 }
             });
