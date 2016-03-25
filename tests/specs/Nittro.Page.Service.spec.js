@@ -82,7 +82,7 @@ describe('Nittro.Page.Service', function () {
 
             testInstance.openLink(document.getElementById('test-link'))
                 .then(function () {
-                    if (parseFloat(window.getComputedStyle(testContainer.firstChild).opacity) !== 0) {
+                    if (parseFloat(window.getComputedStyle(testContainer.firstChild).opacity) === 1) {
                         mockAjax.listeners.pop();
                         done.fail('Transition wasn\'t applied');
                         return;
