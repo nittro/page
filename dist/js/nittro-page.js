@@ -1658,8 +1658,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
 
             var p = Promise.all([xhr, transitionElms, removeElms, pushState || false, transition]);
-            p.then(this._handleResponse.bind(this), this._handleError.bind(this));
-            return p;
+            return p.then(this._handleResponse.bind(this), this._handleError.bind(this));
 
         },
 
