@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>{$title}</title>
+
+        <link rel="stylesheet" type="text/css" href="../dist/css/nittro-page.min.css" />
+        <script type="text/javascript" src="../dist/js/nittro-page.full.min.js" async defer></script>
+    </head>
+    <body>
+        <h1 n:snippet="title">{$title}</h1>
+
+        <div n:snippet="content" class="transition-slide transition-auto">
+            {block content}{/block}
+        </div>
+    </body>
+</html>

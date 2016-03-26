@@ -104,4 +104,7 @@ node_modules/
 # Bower components
 bower_components/
 
+# Composer packages
+vendor/
+
 # Created by .ignore support plugin (hsz.mobi)

@@ -1,0 +1,26 @@
+parameters:
+
+
+php:
+    date.timezone: Europe/Prague
+
+
+application:
+    scanDirs: %appDir%/presenters
+    scanComposer: false
+    errorPresenter: Error
+    mapping:
+        *: App\*Module\Presenters\*Presenter
+
+routing:
+    debugger: true
+    routes:
+        "<presenter>[/<action>]": "Home:default"
+
+tracy:
+
+session:
+    expiration: 14 days
+
+
+services:

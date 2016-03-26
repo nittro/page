@@ -1,11 +1,25 @@
 {
     "name": "nittro/page",
     "description": "JavaScript client-side library to use with the Nette framework",
+    "license": "MIT",
     "authors": [
         {
             "name": "Dan Kadera",
             "email": "me@subsonic.cz",
             "role": "Developer"
         }
-    ]
+    ],
+    "require-dev": {
+        "nette/application": "^2.3",
+        "latte/latte": "^2.3",
+        "tracy/tracy": "^2.3",
+        "nette/di": "^2.3",
+        "nette/bootstrap": "^2.3",
+        "nette/robot-loader": "^2.3"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Presenters\\": "examples/app/presenters"
+        }
+    }
 }
