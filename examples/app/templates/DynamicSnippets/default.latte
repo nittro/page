@@ -1,0 +1,28 @@
+{block content}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Value</th>
+                <td>&nbsp;</td>
+            </tr>
+        </thead>
+        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.transition-fade">
+            {foreach $entries as $entry}
+                <tr n:snippet="entry-$entry->id" class="transition-fade">
+                    <td>{$entry->id}</td>
+                    <td>| {$entry->name} |</td>
+                    <td>{$entry->value}</td>
+                    <td>
+                        <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}">&times;</a>
+                    </td>
+                </tr>
+            {/foreach}
+        </tbody>
+    </table>
+
+    <p>
+        <a n:href="add!" data-transition="false">Add item</a>
+    </p>
+{/block}

@@ -10,6 +10,12 @@
     <body>
         <h1 n:snippet="title">{$title}</h1>
 
+        <nav id="main-nav">
+            <a n:href="Snippets:">Snippets</a>
+            |
+            <a n:href="DynamicSnippets:">Dynamic snippets</a>
+        </nav>
+
         <div n:snippet="content" class="transition-slide transition-auto">
             {block content}{/block}
         </div>

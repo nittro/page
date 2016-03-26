@@ -8,31 +8,19 @@
 
 namespace App\Presenters;
 use Nette;
+use Nittro\Bridges\NittroUI\Presenter;
 
-abstract class BasePresenter extends Nette\Application\UI\Presenter {
+abstract class BasePresenter extends Presenter {
 
     /** @var string */
     protected $title = 'Nittro Examples';
-
-    /** @var bool */
-    private $signalled = false;
-
-    /** @var array */
-    private $defaultSnippets = ['content', 'title'];
-
 
 
     protected function startup() {
         parent::startup();
 
-        $this->signalled = $this->getSignal() !== null;
+        $this->setDefaultSnippets(['content', 'title']);
 
-    }
-
-
-
-    protected function isSignalled() {
-        return $this->signalled;
     }
 
 
@@ -42,13 +30,7 @@ abstract class BasePresenter extends Nette\Application\UI\Presenter {
 
         if ($this->isAjax()) {
             $this->payload->title = $this->title;
-
-            if (!$this->isSignalled() && !$this->isControlInvalid()) {
-                foreach ($this->defaultSnippets as $snippet) {
-                    $this->redrawControl($snippet);
-
-                }
-            }
+            
         }
 
         $this->template->title = $this->title;

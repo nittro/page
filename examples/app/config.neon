@@ -14,13 +14,19 @@ application:
 
 routing:
     debugger: true
-    routes:
-        "<presenter>[/<action>]": "Home:default"
 
 tracy:
+
+latte:
+    macros:
+        - Nittro\Bridges\NittroLatte\NittroMacros
 
 session:
     expiration: 14 days
 
 
 services:
+    routing.router:
+        setup:
+            - "$service[] = new Nette\\Application\\Routers\\Route(?, ?, ?)"('', 'Snippets:default', 1)
+            - "$service[] = new Nette\\Application\\Routers\\Route(?, ?)"('<presenter>[/<action>]', 'Home:default')
