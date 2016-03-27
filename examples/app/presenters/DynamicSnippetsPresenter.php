@@ -105,6 +105,18 @@ class DynamicSnippetsPresenter extends BasePresenter {
 
     }
 
+    public function renderSorted() {
+        $entries = $this->getEntries();
+
+        uasort($entries, function($a, $b) {
+            return $a->value - $b->value;
+        });
+
+        $this->template->entries = $entries;
+        $this->title .= ' :: Dynamic snippets';
+
+    }
+
 
     public function getEntries() {
         if ($this->entries === null) {

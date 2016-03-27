@@ -1,0 +1,39 @@
+{block content}
+    <p>
+        Sorted dynamic snippets work much like regular dynamic snippets,
+        except that provided that you sort the initial data the snippets
+        will stay sorted when new snippets are added or when a snippet
+        is updated. Try adding an entry and watch it being inserted
+        at the appropriate row based on the value, or updating an entry
+        using the '*' link and watch it get reinserted, again respecting
+        the new value.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Value</th>
+                <td>&nbsp;</td>
+            </tr>
+        </thead>
+        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.transition-fade" data-dynamic-sort=".value(value)">
+            {foreach $entries as $entry}
+                <tr n:snippet="entry-$entry->id" class="transition-fade">
+                    <td>{$entry->id}</td>
+                    <td>| {$entry->name} |</td>
+                    <td class="value" data-value="{$entry->value}">{$entry->value}</td>
+                    <td>
+                        <a n:href="update! $entry->id" data-transition="#{snippetId entry-$entry->id}" title="Update entry">*</a>
+                        <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
+                    </td>
+                </tr>
+            {/foreach}
+        </tbody>
+    </table>
+
+    <p>
+        <a n:href="add!" data-transition="false">Add entry</a>
+    </p>
+{/block}
