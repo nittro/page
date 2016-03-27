@@ -54,6 +54,29 @@ class DynamicSnippetsPresenter extends BasePresenter {
     }
 
 
+    public function handleUpdate($id) {
+        $session = $this->getSession('dynamicDemo');
+
+        if (isSet($session->entries, $session->entries[$id])) {
+            $entries = $session->entries;
+            $entries[$id]->value = mt_rand(1, 100);
+            $session->entries = $entries;
+            $this->entries = [$id => $entries[$id]];
+
+            $this->flashMessage('Entry #' . $id . ' has been updated');
+
+        } else {
+            $this->flashMessage('Entry #' . $id . ' not found');
+            $this->entries = [];
+
+        }
+
+        $this->postGet('this');
+        $this->redrawControl('entries');
+
+    }
+
+
     public function handleRemove($id) {
         $session = $this->getSession('dynamicDemo');
 

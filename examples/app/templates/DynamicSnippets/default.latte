@@ -15,7 +15,8 @@
                     <td>| {$entry->name} |</td>
                     <td>{$entry->value}</td>
                     <td>
-                        <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}">&times;</a>
+                        <a n:href="update! $entry->id" data-transition="#{snippetId entry-$entry->id}" title="Update entry">*</a>
+                        <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
                     </td>
                 </tr>
             {/foreach}
@@ -23,6 +24,6 @@
     </table>
 
     <p>
-        <a n:href="add!" data-transition="false">Add item</a>
+        <a n:href="add!" data-transition="false">Add entry</a>
     </p>
 {/block}
