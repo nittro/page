@@ -2,7 +2,7 @@ Examples of Nittro Page usage
 =============================
 
 Read through all of the code, there isn't that much; but the important
-stuff happens in the BasePresenter (snippets get invalidated) and in the
+stuff happens in the presenters (snippets get invalidated) and in the
 layout template (Nittro gets loaded).
 
 The Dynamic snippet example makes use of a common pattern to deal
