@@ -1989,7 +1989,7 @@ _context.invoke('Utils', function(Strings, undefined) {
     };
 
     Url.prototype.isLocal = function() {
-        return this.compare(Url.fromCurrent()) <= Url.PART.PORT;
+        return this.compare(Url.fromCurrent()) < Url.PART.PORT;
 
     };
 
@@ -4630,7 +4630,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             var url = Url.fromCurrent(),
                 request;
 
-            if (url.compare(this._.currentUrl) <= Url.PART.HASH) {
+            if (!this._checkUrl(url)) {
                 return;
 
             }
@@ -4698,17 +4698,9 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
             }
 
-            var link = DOM.closest(evt.target, 'a'),
-                url;
+            var link = DOM.closest(evt.target, 'a');
 
-            if (!link || !this._checkLink(link)) {
-                return;
-
-            }
-
-            url = Url.from(link.href);
-
-            if (!url.isLocal() || url.compare() === Url.PART.HASH) {
+            if (!link || !this._checkLink(link) || !this._checkUrl(link.href)) {
                 return;
 
             }
@@ -4744,7 +4736,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
             }
 
-            if (!(evt.target instanceof HTMLFormElement) || !this._checkForm(evt.target)) {
+            if (!(evt.target instanceof HTMLFormElement) || !this._checkForm(evt.target) || !this._checkUrl(evt.target.action)) {
                 return;
 
             }
@@ -4756,6 +4748,19 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         _createRequest: function (url, method, data, evt, context) {
             if (this._.request) {
                 this._.request.abort();
+
+            }
+
+            var create = this.trigger('create-request', {
+                url: url,
+                method: method,
+                data: data,
+                context: context
+            });
+
+            if (create.isDefaultPrevented()) {
+                evt && evt.preventDefault();
+                return Promise.reject();
 
             }
 
@@ -4772,7 +4777,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
         },
 
-        _dispatchRequest: function (request, elem, pushState) {
+        _dispatchRequest: function (request, context, pushState) {
             this._.request = request;
 
             var xhr = this._.ajax.dispatch(request); // may throw exception
@@ -4781,9 +4786,9 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 removeElms,
                 transition;
 
-            if (elem) {
-                transitionElms = this._getTransitionTargets(elem);
-                removeElms = this._getRemoveTargets(elem);
+            if (context) {
+                transitionElms = this._getTransitionTargets(context);
+                removeElms = this._getRemoveTargets(context);
 
                 if (removeElms.length) {
                     DOM.addClass(removeElms, 'dynamic-remove');
@@ -4853,8 +4858,14 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         },
 
+        _checkUrl: function(url) {
+            var d = Url.fromCurrent().compare(url);
+            return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
+
+        },
+
         _checkRedirect: function (payload) {
-            return !this._.options.whitelistRedirects !== !payload.allowAjax && Url.from(payload.redirect).isLocal();
+            return !this._.options.whitelistRedirects !== !payload.allowAjax && this._checkUrl(payload.redirect);
 
         },
 
@@ -4920,8 +4931,13 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _showError: function (evt) {
-            this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
+            if (evt.data.type === 'connection') {
+                this._.flashMessages.add(null, 'error', 'There was an error connecting to the server. Please check your internet connection and try again.');
 
+            } else if (evt.data.type !== 'abort') {
+                this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
+
+            }
         }
     });
 

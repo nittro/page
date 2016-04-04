@@ -1,6 +1,6 @@
 describe('Nittro.Page.Service', function () {
 
-    var Page, Transitions, Ajax, FlashMessages,
+    var Page, Transitions, Ajax, MockRequest, FlashMessages,
         mockAjax,
         mockFlashes,
         testInstance,
@@ -10,6 +10,7 @@ describe('Nittro.Page.Service', function () {
         Page = _context.lookup('Nittro.Page.Service');
         Transitions = _context.lookup('Nittro.Page.Transitions');
         Ajax = _context.lookup('Mocks.Ajax.Service');
+        MockRequest = _context.lookup('Mocks.Ajax.Request');
         FlashMessages = _context.lookup('Mocks.Widgets.FlashMessages');
 
         mockAjax = new Ajax();
@@ -32,29 +33,17 @@ describe('Nittro.Page.Service', function () {
 
     describe('open()', function () {
         it('should load an URL', function (done) {
-            mockAjax.listeners.push(function (request) {
-                if (request.getUrl().getPath() !== '/foo') {
-                    mockAjax.listeners.pop();
-                    done.fail('Invalid request URL: ' + request.getUrl());
-                    return;
-
+            var payload = {
+                snippets: {
+                    'snippet-test': '<h2>Response loaded</h2><a href="/bar" id="test-link" class="ajax" data-transition="#snippet-test">Test link</a>'
                 }
-
-                request.response.options.fail = false;
-
-                request.response.setResponse(200, {
-                    snippets: {
-                        'snippet-test': '<h2>Response loaded</h2><a href="/bar" id="test-link" class="ajax" data-transition="#snippet-test">Test link</a>'
-                    }
-                }, { });
-            });
+            };
+            mockAjax.requests.push(new MockRequest('/foo', 'GET', {}, { payload: payload }));
 
             testInstance.open('/foo').then(function () {
-                mockAjax.listeners.pop();
                 expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Response loaded');
                 done();
             }, function () {
-                mockAjax.listeners.pop();
                 done.fail('Response wasn\'t loaded');
             });
         });
@@ -62,38 +51,25 @@ describe('Nittro.Page.Service', function () {
 
     describe('openLink()', function () {
         it('should open a link, performing any associated transitions', function (done) {
-            mockAjax.listeners.push(function (request) {
-                if (request.getUrl().getPath() !== '/bar') {
-                    mockAjax.listeners.pop();
-                    done.fail('Invalid request url: ' + request.getUrl());
-                    return;
-
+            var payload = {
+                snippets: {
+                    'snippet-test': '<h2>Another one bites the dust</h2>'
                 }
+            };
 
-                request.response.options.fail = false;
-                request.response.options.delay = 500;
-
-                request.response.setResponse(200, {
-                    snippets: {
-                        'snippet-test': '<h2>Another one bites the dust</h2>'
-                    }
-                }, { });
-            });
+            mockAjax.requests.push(new MockRequest('/bar', 'GET', {}, { payload: payload }));
 
             testInstance.openLink(document.getElementById('test-link'))
                 .then(function () {
                     if (parseFloat(window.getComputedStyle(testContainer.firstChild).opacity) === 1) {
-                        mockAjax.listeners.pop();
                         done.fail('Transition wasn\'t applied');
                         return;
                     }
 
-                    mockAjax.listeners.pop();
                     expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Another one bites the dust');
                     done();
 
                 }, function () {
-                    mockAjax.listeners.pop();
                     done.fail('Response wasn\'t loaded');
                 });
 
@@ -104,31 +80,20 @@ describe('Nittro.Page.Service', function () {
         it('should be appended by default', function (done) {
             testContainer.innerHTML = '<div id="snippet-test-dynamic" class="snippet-container" data-dynamic-mask="snippet-dynamic-\\d+"></div>';
 
-            mockAjax.listeners.push(function (request) {
-                if (request.getUrl().getPath() !== '/dynamic') {
-                    mockAjax.listeners.pop();
-                    done.fail('Invalid request URL: ' + request.getUrl());
-                    return;
-
+            var payload = {
+                snippets: {
+                    'snippet-dynamic-1': 'Dynamic #1',
+                    'snippet-dynamic-2': 'Dynamic #2',
+                    'snippet-dynamic-3': 'Dynamic #3'
                 }
+            };
 
-                request.response.options.fail = false;
-
-                request.response.setResponse(200, {
-                    snippets: {
-                        'snippet-dynamic-1': 'Dynamic #1',
-                        'snippet-dynamic-2': 'Dynamic #2',
-                        'snippet-dynamic-3': 'Dynamic #3'
-                    }
-                }, { });
-            });
+            mockAjax.requests.push(new MockRequest('/dynamic', 'GET', {}, { payload: payload }));
 
             testInstance.open('/dynamic').then(function () {
-                mockAjax.listeners.pop();
                 expect(testContainer.querySelectorAll('#snippet-test-dynamic > div').length).toBe(3);
                 done();
             }, function () {
-                mockAjax.listeners.pop();
                 done.fail('Response wasn\'t loaded');
             });
         });

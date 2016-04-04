@@ -1,17 +1,22 @@
 _context.invoke('Mocks.Ajax', function () {
 
-    var Request = _context.extend('Nittro.Ajax.Request', function (url, method, data) {
+    var Request = _context.extend('Nittro.Ajax.Request', function (url, method, data, response) {
         Request.Super.call(this, url, method, data);
 
+        response || (response = {});
         this.response = new Response();
+        this.response.setResponse(response.status || 200, response.payload || {}, response.headers || {});
 
     }, {});
+
+    _context.register(Request, 'Request');
 
     var Response = _context.extend('Nittro.Ajax.Response', function () {
         Response.Super.call(this, 503, null, {});
 
         this.options = {
-            fail: true,
+            fail: false,
+            reason: null,
             delay: false
         };
     }, {
@@ -25,7 +30,7 @@ _context.invoke('Mocks.Ajax', function () {
 
 
     var Service = function () {
-        this.listeners = [];
+        this.requests = [];
     };
 
     Service.prototype = {
@@ -38,11 +43,26 @@ _context.invoke('Mocks.Ajax', function () {
         },
 
         createRequest: function (url, method, data) {
-            var request = new Request(url, method, data);
+            var request = this.requests.shift();
 
-            this.listeners.forEach(function (listener) {
-                listener.call(null, request);
-            });
+            if (!request) {
+                request = new Request(url, method, data, {status: -1, payload: null, headers: {}});
+                request.response.options.fail = true;
+                request.response.options.reason = 'No mock request in queue';
+
+            } else if (request.getUrl().compare(url)) {
+                request.response.options.fail = true;
+                request.response.options.reason = 'Invalid request url: ' + url;
+
+            } else if (request.getMethod() !== (method || 'GET').toUpperCase()) {
+                request.response.options.fail = true;
+                request.response.options.reason = 'Invalid request method: ' + method;
+
+            } else if (JSON.stringify(request.getData() || {}) !== JSON.stringify(data || {})) {
+                request.response.options.fail = true;
+                request.response.options.reason = 'Invalid request data';
+
+            }
 
             return request;
 
