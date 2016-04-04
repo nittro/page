@@ -2232,7 +2232,7 @@ _context.invoke('Utils', function(Strings, undefined) {
 ;
 _context.invoke('Utils', function (Arrays, Strings, undefined) {
 
-    var map = function (args, callback) {
+    function map(args, callback) {
         args = Arrays.createFrom(args);
 
         if (Arrays.isArray(args[0])) {
@@ -2261,15 +2261,19 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
 
             }
         }
-    };
+    }
 
-    var getElem = function (elem) {
-        Arrays.isArrayLike(elem) && elem !== window && (elem = elem[0]);
+    function getElem(elem) {
+        if (Arrays.isArray(elem) || elem instanceof HTMLCollection || elem instanceof NodeList) {
+            elem = elem[0];
+
+        }
+
         return typeof elem === 'string' ? DOM.getById(elem) : elem;
 
-    };
+    }
 
-    var getPrefixed = function (elem, prop) {
+    function getPrefixed(elem, prop) {
         if (Arrays.isArray(elem)) {
             elem = elem[0];
 
@@ -2294,9 +2298,9 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
 
         return prop;
 
-    };
+    }
 
-    var parseData = function (value) {
+    function parseData(value) {
         if (!value) return null;
 
         try {
@@ -2306,7 +2310,7 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
             return value;
 
         }
-    };
+    }
 
     var DOM = {
         getByClassName: function (className, context) {
