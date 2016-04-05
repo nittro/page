@@ -4863,7 +4863,15 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _checkUrl: function(url) {
-            var d = Url.fromCurrent().compare(url);
+            var u = Url.from(url),
+                c = Url.fromCurrent(),
+                d = u.compare(c);
+
+            if (d === Url.PART.HASH && !u.getHash()) {
+                return true;
+                
+            }
+
             return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
 
         },
