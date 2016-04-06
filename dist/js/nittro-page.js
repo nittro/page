@@ -1494,7 +1494,11 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         },
 
-        _handleState: function () {
+        _handleState: function (evt) {
+            if (evt.state === null) {
+                return;
+            }
+
             var url = Url.fromCurrent(),
                 request;
 
@@ -1527,7 +1531,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
 
             this._.currentUrl = Url.from(url);
-            window.history.pushState(null, document.title, this._.currentUrl.toAbsolute());
+            window.history.pushState({ _nittro: true }, document.title, this._.currentUrl.toAbsolute());
 
         },
 
@@ -1542,6 +1546,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 this._.setup = true;
 
                 window.setTimeout(function () {
+                    window.history.replaceState({ _nittro: true }, document.title, document.location.href);
                     this._setup();
                     this._showHtmlFlashes();
                     this.trigger('update');
@@ -1733,7 +1738,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
             if (d === Url.PART.HASH && !u.getHash()) {
                 return true;
-                
+
             }
 
             return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
