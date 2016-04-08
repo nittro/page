@@ -2093,7 +2093,7 @@ _context.invoke('Utils', function(Strings, undefined) {
     Url.buildQuery = function(data, pairs) {
         var q = [], n, en = encodeURIComponent;
 
-        var val = function (v) {
+        function val(v) {
             if (v === undefined) {
                 return null;
 
@@ -2104,9 +2104,9 @@ _context.invoke('Utils', function(Strings, undefined) {
                 return en('' + v);
 
             }
-        };
+        }
 
-        var flatten = function(a, n) {
+        function flatten(a, n) {
             var r = [], i;
 
             if (Array.isArray(a)) {
@@ -2126,9 +2126,9 @@ _context.invoke('Utils', function(Strings, undefined) {
                 }
             }
 
-            return r.filter(function(v) { return v !== null }).join('&');
+            return r.length ? r.filter(function(v) { return v !== null }).join('&') : null;
 
-        };
+        }
 
         for (n in data) {
             if (data[n] === null || data[n] === undefined) {
@@ -2274,10 +2274,7 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
     }
 
     function getPrefixed(elem, prop) {
-        if (Arrays.isArray(elem)) {
-            elem = elem[0];
-
-        }
+        elem = getElem(elem);
 
         if (prop in elem.style) {
             return prop;
@@ -2444,6 +2441,18 @@ _context.invoke('Utils', function (Arrays, Strings, undefined) {
 
             return map([elem], function (elem) {
                 elem.style[prop] = value;
+
+            });
+        },
+
+        getStyle: function(elem, prop, prefix) {
+            if (prefix !== false) {
+                prop = getPrefixed(elem, prop);
+
+            }
+
+            return map([elem], function(elem) {
+                return window.getComputedStyle(elem)[prop];
 
             });
         },
@@ -4396,8 +4405,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
             duration: duration || false,
             ready: true,
             queue: [],
-            support: false,
-            property: null
+            support: false
         };
 
         try {
@@ -4410,11 +4418,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
                 'msTransition',
                 'OTransition'
             ].some(function(prop) {
-                if (prop in s) {
-                    this._.property = prop;
-                    return true;
-                }
-            }.bind(this));
+                return prop in s;
+            });
 
             s = null;
 
@@ -4443,8 +4448,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
         _resolve: function (elements, className) {
             if (!this._.ready) {
-                return new Promise(function (resolve) {
-                    this._.queue.push([elements, className, resolve]);
+                return new Promise(function (fulfill) {
+                    this._.queue.push([elements, className, fulfill]);
 
                 }.bind(this));
             }
@@ -4461,7 +4466,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             var duration = this._getDuration(elements);
 
-            var promise = new Promise(function (resolve) {
+            var promise = new Promise(function (fulfill) {
                 window.setTimeout(function () {
                     DOM.removeClass(elements, 'transition-active ' + className);
 
@@ -4472,7 +4477,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
                     this._.ready = true;
 
-                    resolve(elements);
+                    fulfill(elements);
 
                 }.bind(this), duration);
             }.bind(this));
@@ -4498,30 +4503,20 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             }
 
-            var durations = [],
-                prop = this._.property + 'Duration';
+            var durations = DOM.getStyle(elements, 'animationDuration')
+                .concat(DOM.getStyle(elements, 'transitionDuration'))
+                .map(function(d) {
+                    if (!d) {
+                        return 0;
+                    }
 
-            elements.forEach(function (elem) {
-                var duration = window.getComputedStyle(elem)[prop];
-
-                if (duration) {
-                    duration = (duration + '').trim().split(/\s*,\s*/g).map(function (v) {
+                    return Math.max.apply(null, d.split(/\s*,\s*/g).map(function(v) {
                         v = v.match(/^((?:\d*\.)?\d+)(m?s)$/);
+                        return v ? parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000) : 0;
 
-                        if (v) {
-                            return parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000);
-
-                        } else {
-                            return 0;
-
-                        }
-                    });
-
-                    durations.push.apply(durations, duration.filter(function(v) { return v > 0; }));
-
-                }
-            });
-
+                    }));
+                });
+            
             if (durations.length) {
                 return Math.max.apply(null, durations);
 

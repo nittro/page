@@ -1260,8 +1260,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
             duration: duration || false,
             ready: true,
             queue: [],
-            support: false,
-            property: null
+            support: false
         };
 
         try {
@@ -1274,11 +1273,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
                 'msTransition',
                 'OTransition'
             ].some(function(prop) {
-                if (prop in s) {
-                    this._.property = prop;
-                    return true;
-                }
-            }.bind(this));
+                return prop in s;
+            });
 
             s = null;
 
@@ -1307,8 +1303,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
         _resolve: function (elements, className) {
             if (!this._.ready) {
-                return new Promise(function (resolve) {
-                    this._.queue.push([elements, className, resolve]);
+                return new Promise(function (fulfill) {
+                    this._.queue.push([elements, className, fulfill]);
 
                 }.bind(this));
             }
@@ -1325,7 +1321,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             var duration = this._getDuration(elements);
 
-            var promise = new Promise(function (resolve) {
+            var promise = new Promise(function (fulfill) {
                 window.setTimeout(function () {
                     DOM.removeClass(elements, 'transition-active ' + className);
 
@@ -1336,7 +1332,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
                     this._.ready = true;
 
-                    resolve(elements);
+                    fulfill(elements);
 
                 }.bind(this), duration);
             }.bind(this));
@@ -1362,30 +1358,20 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             }
 
-            var durations = [],
-                prop = this._.property + 'Duration';
+            var durations = DOM.getStyle(elements, 'animationDuration')
+                .concat(DOM.getStyle(elements, 'transitionDuration'))
+                .map(function(d) {
+                    if (!d) {
+                        return 0;
+                    }
 
-            elements.forEach(function (elem) {
-                var duration = window.getComputedStyle(elem)[prop];
-
-                if (duration) {
-                    duration = (duration + '').trim().split(/\s*,\s*/g).map(function (v) {
+                    return Math.max.apply(null, d.split(/\s*,\s*/g).map(function(v) {
                         v = v.match(/^((?:\d*\.)?\d+)(m?s)$/);
+                        return v ? parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000) : 0;
 
-                        if (v) {
-                            return parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000);
-
-                        } else {
-                            return 0;
-
-                        }
-                    });
-
-                    durations.push.apply(durations, duration.filter(function(v) { return v > 0; }));
-
-                }
-            });
-
+                    }));
+                });
+            
             if (durations.length) {
                 return Math.max.apply(null, durations);
 

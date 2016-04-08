@@ -39,7 +39,7 @@ module.exports = function (grunt) {
             options: {
                 separator: ";\n"
             },
-            nettejs: {
+            nittro: {
                 files: {
                     'dist/js/nittro-page.js': NittroPage,
                     'dist/js/nittro-page.full.js': [
