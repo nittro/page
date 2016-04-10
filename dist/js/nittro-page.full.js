@@ -4612,6 +4612,29 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         },
 
+        saveHistoryState: function(url, title, replace) {
+            if (!title) {
+                title = document.title;
+            } else {
+                document.title = title;
+            }
+
+            if (url) {
+                url = Url.from(url).toAbsolute();
+            } else {
+                url = document.location.href;
+            }
+
+            if (replace) {
+                window.history.replaceState({ _nittro: true }, title, url);
+            } else {
+                window.history.pushState({ _nittro: true }, title, url);
+            }
+
+            return this;
+
+        },
+
         _checkFormLocator: function (need) {
             if (this._.formLocator) {
                 return true;
@@ -4662,7 +4685,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
 
             this._.currentUrl = Url.from(url);
-            window.history.pushState({ _nittro: true }, document.title, this._.currentUrl.toAbsolute());
+            this.saveHistoryState(this._.currentUrl);
 
         },
 
@@ -4677,7 +4700,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 this._.setup = true;
 
                 window.setTimeout(function () {
-                    window.history.replaceState({ _nittro: true }, document.title, document.location.href);
+                    this.saveHistoryState(null, null, true);
                     this._setup();
                     this._showHtmlFlashes();
                     this.trigger('update');
