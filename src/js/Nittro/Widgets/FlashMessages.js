@@ -85,6 +85,7 @@ _context.invoke('Nittro.Widgets', function (DOM, Arrays) {
                 DOM.html(elem, content);
 
             } else {
+                DOM.addClass(elem, 'flash-plain');
                 elem.textContent = content;
 
             }
