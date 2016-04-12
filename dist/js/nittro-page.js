@@ -1924,6 +1924,13 @@ _context.invoke('Nittro.Widgets', function (DOM, Arrays) {
 
             }
 
+            var targetClass = DOM.getData(target, 'flash-class');
+
+            if (targetClass) {
+                DOM.addClass(elem, targetClass);
+                
+            }
+
             if (rich) {
                 DOM.html(elem, content);
 
