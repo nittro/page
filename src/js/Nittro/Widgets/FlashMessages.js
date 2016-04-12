@@ -81,11 +81,11 @@ _context.invoke('Nittro.Widgets', function (DOM, Arrays) {
 
             }
 
-            var targetClass = DOM.getData(target, 'flash-class');
+            var targetClass = target ? DOM.getData(target, 'flash-class') : null;
 
             if (targetClass) {
                 DOM.addClass(elem, targetClass);
-                
+
             }
 
             if (rich) {
