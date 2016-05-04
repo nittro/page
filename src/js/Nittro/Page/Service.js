@@ -84,15 +84,17 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
 
             if (url) {
-                url = Url.from(url).toAbsolute();
+                url = Url.from(url);
             } else {
-                url = document.location.href;
+                url = Url.fromCurrent();
             }
 
+            this._.currentUrl = url;
+
             if (replace) {
-                window.history.replaceState({ _nittro: true }, title, url);
+                window.history.replaceState({ _nittro: true }, title, url.toAbsolute());
             } else {
-                window.history.pushState({ _nittro: true }, title, url);
+                window.history.pushState({ _nittro: true }, title, url.toAbsolute());
             }
 
             return this;
@@ -117,14 +119,14 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 return;
             }
 
-            var url = Url.fromCurrent(),
-                request;
+            var url, request;
 
-            if (!this._checkUrl(url)) {
+            if (!this._checkUrl(null, this._.currentUrl)) {
                 return;
 
             }
 
+            url = Url.fromCurrent();
             this._.currentUrl = url;
             request = this._.ajax.createRequest(url);
 
@@ -349,9 +351,9 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         },
 
-        _checkUrl: function(url) {
-            var u = Url.from(url),
-                c = Url.fromCurrent(),
+        _checkUrl: function(url, current) {
+            var u = url ? Url.from(url) : Url.fromCurrent(),
+                c = current ? Url.from(current) : Url.fromCurrent(),
                 d = u.compare(c);
 
             if (d === Url.PART.HASH && !u.getHash()) {
