@@ -352,14 +352,13 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _checkUrl: function(url, current) {
+            if ((url + '').match(/^javascript:/)) {
+                return false;
+            }
+
             var u = url ? Url.from(url) : Url.fromCurrent(),
                 c = current ? Url.from(current) : Url.fromCurrent(),
                 d = u.compare(c);
-
-            if (d === Url.PART.HASH && !u.getHash()) {
-                return true;
-
-            }
 
             return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
 
