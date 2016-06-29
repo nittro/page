@@ -73,7 +73,7 @@ _context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
             var onLoad = function (evt) {
                 cleanup();
 
-                if (xhr.status === 200) {
+                if (xhr.status >= 200 && xhr.status < 300) {
                     var response = self._createResponse(xhr);
                     request.trigger('success', response);
                     fulfill(response);
@@ -114,7 +114,7 @@ _context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
             } else {
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
+                        if (xhr.status >= 200 && xhr.status < 300) {
                             onLoad();
 
                         } else {
@@ -223,7 +223,7 @@ _context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
                     status: null,
                     response: response
                 };
-            } else if (xhr.status !== 200) {
+            } else if (xhr.status < 200 || xhr.status >= 300) {
                 return {
                     type: 'response',
                     status: xhr.status,

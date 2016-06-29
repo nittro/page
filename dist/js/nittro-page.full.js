@@ -3523,7 +3523,7 @@ _context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
             var onLoad = function (evt) {
                 cleanup();
 
-                if (xhr.status === 200) {
+                if (xhr.status >= 200 && xhr.status < 300) {
                     var response = self._createResponse(xhr);
                     request.trigger('success', response);
                     fulfill(response);
@@ -3564,7 +3564,7 @@ _context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
             } else {
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
+                        if (xhr.status >= 200 && xhr.status < 300) {
                             onLoad();
 
                         } else {
@@ -3673,7 +3673,7 @@ _context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
                     status: null,
                     response: response
                 };
-            } else if (xhr.status !== 200) {
+            } else if (xhr.status < 200 || xhr.status >= 300) {
                 return {
                     type: 'response',
                     status: xhr.status,
@@ -4888,14 +4888,13 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _checkUrl: function(url, current) {
+            if ((url + '').match(/^javascript:/)) {
+                return false;
+            }
+
             var u = url ? Url.from(url) : Url.fromCurrent(),
                 c = current ? Url.from(current) : Url.fromCurrent(),
                 d = u.compare(c);
-
-            if (d === Url.PART.HASH && !u.getHash()) {
-                return true;
-
-            }
 
             return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
 
