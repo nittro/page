@@ -12,6 +12,8 @@ _context.invoke(function (Page, Ajax, FlashMessages) {
     });
 
     _context.register(page, 'page');
+    _context.register(ajax, 'ajax');
+    _context.register(flashMessages, 'flashes');
 
 }, {
     Page: 'Nittro.Page',

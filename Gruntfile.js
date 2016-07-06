@@ -23,14 +23,7 @@ module.exports = function (grunt) {
             },
             nittro: {
                 files: {
-                    'dist/js/nittro-page.min.js': NittroPage,
-                    'dist/js/nittro-page.full.min.js': [
-                        'bower_components/promiz/promiz.min.js',
-                        'bower_components/nittro-core/dist/js/nittro-core.js'
-                    ].concat(
-                        NittroPage,
-                        'src/js/bootstrap.js'
-                    )
+                    'dist/js/nittro-page.min.js': NittroPage
                 }
             }
         },
@@ -41,14 +34,7 @@ module.exports = function (grunt) {
             },
             nittro: {
                 files: {
-                    'dist/js/nittro-page.js': NittroPage,
-                    'dist/js/nittro-page.full.js': [
-                        'bower_components/promiz/promiz.js',
-                        'bower_components/nittro-core/dist/js/nittro-core.js'
-                    ].concat(
-                        NittroPage,
-                        'src/js/bootstrap.js'
-                    )
+                    'dist/js/nittro-page.js': NittroPage
                 }
             }
         },
@@ -91,9 +77,9 @@ module.exports = function (grunt) {
                     'bower_components/promiz/promiz.min.js',
                     'bower_components/nittro-core/dist/js/nittro-core.js'
                 ],
-                specs: 'tests/specs/**.spec.js'/*,
+                specs: 'tests/specs/**.spec.js',
                 display: 'short',
-                summary: true*/
+                summary: true
             }
         }
     });

@@ -1,6 +1,6 @@
 {
     "name": "nittro-page",
-    "homepage": "http://www.nittro.org",
+    "homepage": "https://www.nittro.org",
     "authors": [
         "Dan Kadera <me@subsonic.cz>"
     ],
@@ -17,7 +17,7 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "nittro-core": "^1.9.6"
+        "nittro-core": "^2.0.0-rc.1"
     },
     "ignore": [
         "**/.*",
