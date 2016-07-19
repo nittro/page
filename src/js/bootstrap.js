@@ -1,22 +1,26 @@
-_context.invoke(function (Page, Ajax, FlashMessages) {
+_context.invoke(function (Nittro) {
 
-    var ajax = new Ajax.Service();
-    ajax.addTransport(new Ajax.Transport.Native());
+    var ajax = new Nittro.Ajax.Service(),
+        transitions = new Nittro.Page.Transitions(300),
+        flashes;
 
-    var transitions = new Page.Transitions(300);
-    var flashMessages = new FlashMessages({ layer: document.body });
+    ajax.addTransport(new Nittro.Ajax.Transport.Native());
 
-    var page = new Page.Service(ajax, transitions, flashMessages, {
+    var page = new Nittro.Page.Service(ajax, transitions, {
         whitelistLinks: false,
         defaultTransition: '.transition-auto'
     });
 
+    if (Nittro.Widgets && Nittro.Widgets.Flashes) {
+        flashes = new Nittro.Widgets.Flashes({ layer: document.body });
+
+        page.on('flash', function(evt) {
+            flashes.add(null, evt.data.type, evt.data.message);
+        });
+    }
+
     _context.register(page, 'page');
     _context.register(ajax, 'ajax');
-    _context.register(flashMessages, 'flashes');
+    _context.register(flashes, 'flashes');
 
-}, {
-    Page: 'Nittro.Page',
-    Ajax: 'Nittro.Ajax',
-    FlashMessages: 'Nittro.Widgets.FlashMessages'
 });

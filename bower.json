@@ -17,7 +17,11 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "nittro-core": "^2.0.0-rc.1"
+        "nittro-core": "master",
+        "nittro-ajax": "master"
+    },
+    "devDependencies": {
+        "nittro-extras-flashes": "master"
     },
     "ignore": [
         "**/.*",

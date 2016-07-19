@@ -1,16 +1,10 @@
 module.exports = function (grunt) {
 
-    var NittroPage = [
-        'src/js/Nittro/Ajax/FormData.js',
-        'src/js/Nittro/Ajax/Request.js',
-        'src/js/Nittro/Ajax/Response.js',
-        'src/js/Nittro/Ajax/Service.js',
-        'src/js/Nittro/Ajax/Transport/Native.js',
+    var files = [
         'src/js/Nittro/Page/Snippet.js',
         'src/js/Nittro/Page/SnippetHelpers.js',
         'src/js/Nittro/Page/Transitions.js',
-        'src/js/Nittro/Page/Service.js',
-        'src/js/Nittro/Widgets/FlashMessages.js'
+        'src/js/Nittro/Page/Service.js'
     ];
 
     grunt.initConfig({
@@ -23,7 +17,7 @@ module.exports = function (grunt) {
             },
             nittro: {
                 files: {
-                    'dist/js/nittro-page.min.js': NittroPage
+                    'dist/js/nittro-page.min.js': files
                 }
             }
         },
@@ -34,7 +28,7 @@ module.exports = function (grunt) {
             },
             nittro: {
                 files: {
-                    'dist/js/nittro-page.js': NittroPage
+                    'dist/js/nittro-page.js': files
                 }
             }
         },
@@ -46,7 +40,6 @@ module.exports = function (grunt) {
                 },
                 files: {
                     'dist/css/nittro-page.min.css': [
-                        'src/css/flashes.less',
                         'src/css/transitions.less'
                     ]
                 }
@@ -57,7 +50,6 @@ module.exports = function (grunt) {
                 },
                 files: {
                     'dist/css/nittro-page.css': [
-                        'src/css/flashes.less',
                         'src/css/transitions.less'
                     ]
                 }
@@ -65,9 +57,8 @@ module.exports = function (grunt) {
         },
 
         jasmine: {
-            src: NittroPage.concat(
-                'tests/mocks/Ajax.js',
-                'tests/mocks/FlashMessages.js'
+            src: files.concat(
+                'tests/mocks/Ajax.js'
             ),
             options: {
                 styles: [
@@ -75,7 +66,8 @@ module.exports = function (grunt) {
                 ],
                 vendor: [
                     'bower_components/promiz/promiz.min.js',
-                    'bower_components/nittro-core/dist/js/nittro-core.js'
+                    'bower_components/nittro-core/dist/js/nittro-core.js',
+                    'bower_components/nittro-ajax/dist/js/nittro-ajax.js'
                 ],
                 specs: 'tests/specs/**.spec.js',
                 display: 'short',

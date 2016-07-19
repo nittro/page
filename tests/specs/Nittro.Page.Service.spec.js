@@ -1,8 +1,7 @@
 describe('Nittro.Page.Service', function () {
 
-    var Page, Transitions, Ajax, MockRequest, FlashMessages,
+    var Page, Transitions, Ajax, MockRequest,
         mockAjax,
-        mockFlashes,
         testInstance,
         testContainer;
 
@@ -11,11 +10,9 @@ describe('Nittro.Page.Service', function () {
         Transitions = _context.lookup('Nittro.Page.Transitions');
         Ajax = _context.lookup('Mocks.Ajax.Service');
         MockRequest = _context.lookup('Mocks.Ajax.Request');
-        FlashMessages = _context.lookup('Mocks.Widgets.FlashMessages');
 
         mockAjax = new Ajax();
-        mockFlashes = new FlashMessages();
-        testInstance = new Page(mockAjax, new Transitions(200), mockFlashes);
+        testInstance = new Page(mockAjax, new Transitions(200));
 
         testContainer = document.createElement('div');
         document.body.appendChild(testContainer);

@@ -1,11 +1,10 @@
 _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snippet) {
 
-    var Service = _context.extend('Nittro.Object', function (ajax, transitions, flashMessages, options) {
+    var Service = _context.extend('Nittro.Object', function (ajax, transitions, options) {
         Service.Super.call(this);
 
         this._.ajax = ajax;
         this._.transitions = transitions;
-        this._.flashMessages = flashMessages;
         this._.request = null;
         this._.snippets = {};
         this._.containerCache = null;
@@ -405,7 +404,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             for (id in flashes) {
                 if (flashes.hasOwnProperty(id) && flashes[id]) {
                     for (i = 0; i < flashes[id].length; i++) {
-                        this._.flashMessages.add(null, flashes[id][i].type, flashes[id][i].message);
+                        this.trigger('flash', flashes[id][i]);
 
                     }
                 }
@@ -432,11 +431,15 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         _showError: function (evt) {
             if (evt.data.type === 'connection') {
-                this._.flashMessages.add(null, 'error', 'There was an error connecting to the server. Please check your internet connection and try again.');
-
+                this.trigger('flash', {
+                    type: 'error',
+                    message: 'There was an error connecting to the server. Please check your internet connection and try again.'
+                });
             } else if (evt.data.type !== 'abort') {
-                this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
-
+                this.trigger('flash', {
+                    type: 'error',
+                    message: 'There was an error processing your request. Please try again later.'
+                });
             }
         }
     });
