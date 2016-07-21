@@ -1291,7 +1291,11 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
     Url: 'Utils.Url'
 });
 ;
-_context.invoke('Nittro.Page.Bridges', function () {
+_context.invoke('Nittro.Page.Bridges', function (Nittro) {
+
+    if (!Nittro.DI) {
+        return;
+    }
 
     var PageDI = _context.extend('Nittro.DI.BuilderExtension', function (containerBuilder, config) {
         PageDI.Super.call(this, containerBuilder, config);
@@ -1324,6 +1328,7 @@ _context.invoke('Nittro.Page.Bridges', function () {
                 builder.getServiceDefinition('page')
                     .addSetup(function(flashes) {
                         this.on('flash', function(evt) {
+                            evt.preventDefault();
                             flashes.add(null, evt.data.type, evt.data.message);
                         });
                     });
