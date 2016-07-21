@@ -21,7 +21,8 @@
         "nittro-ajax": "master"
     },
     "devDependencies": {
-        "nittro-extras-flashes": "master"
+        "nittro-extras-flashes": "master",
+        "nittro-di": "master"
     },
     "ignore": [
         "**/.*",

@@ -3,3 +3,4 @@
 /*! @include file="src/js/Nittro/Page/SnippetHelpers.js" */
 /*! @include file="src/js/Nittro/Page/Transitions.js" */
 /*! @include file="src/js/Nittro/Page/Service.js" */
+/*! @include file="src/js/Nittro/Page/Bridges/PageDI.js" */

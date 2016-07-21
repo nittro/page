@@ -1,557 +1,3 @@
-_context.invoke('Nittro.Ajax', function(undefined) {
-
-    var FormData = _context.extend(function() {
-        this._dataStorage = [];
-        this._upload = false;
-
-    }, {
-        append: function(name, value) {
-            if (value === undefined || value === null) {
-                return this;
-
-            }
-
-            if (this._isFile(value)) {
-                this._upload = true;
-
-            } else if (typeof value === 'object' && 'valueOf' in value && /string|number|boolean/.test(typeof value.valueOf()) && !arguments[2]) {
-                return this.append(name, value.valueOf(), true);
-
-            } else if (!/string|number|boolean/.test(typeof value)) {
-                throw new Error('Only scalar values and File/Blob objects can be appended to FormData, ' + (typeof value) + ' given');
-
-            }
-
-            this._dataStorage.push({ name: name, value: value });
-
-            return this;
-
-        },
-
-        isUpload: function() {
-            return this._upload;
-
-        },
-
-        _isFile: function(value) {
-            return window.File !== undefined && value instanceof window.File || window.Blob !== undefined && value instanceof window.Blob;
-
-        },
-
-        mergeData: function(data) {
-            for (var i = 0; i < data.length; i++) {
-                this.append(data[i].name, data[i].value);
-
-            }
-
-            return this;
-
-        },
-
-        exportData: function(forcePlain) {
-            if (!forcePlain && this.isUpload() && window.FormData !== undefined) {
-                var fd = new window.FormData(),
-                    i;
-
-                for (i = 0; i < this._dataStorage.length; i++) {
-                    fd.append(this._dataStorage[i].name, this._dataStorage[i].value);
-
-                }
-
-                return fd;
-
-            } else {
-                return this._dataStorage.filter(function(e) {
-                    return !this._isFile(e.value);
-
-                }, this);
-
-            }
-        }
-    });
-
-    _context.register(FormData, 'FormData');
-
-});
-;
-_context.invoke('Nittro.Ajax', function (Url, FormData, undefined) {
-
-    var Request = _context.extend('Nittro.Object', function(url, method, data) {
-        this._ = {
-            url: Url.from(url),
-            method: (method || 'GET').toUpperCase(),
-            data: data || {},
-            headers: {},
-            normalized: false,
-            aborted: false
-        };
-    }, {
-        getUrl: function () {
-            this._normalize();
-            return this._.url;
-
-        },
-
-        getMethod: function () {
-            return this._.method;
-
-        },
-
-        isGet: function () {
-            return this._.method === 'GET';
-
-        },
-
-        isPost: function () {
-            return this._.method === 'POST';
-
-        },
-
-        isMethod: function (method) {
-            return method.toUpperCase() === this._.method;
-
-        },
-
-        getData: function () {
-            this._normalize();
-            return this._.data;
-
-        },
-
-        getHeaders: function () {
-            return this._.headers;
-
-        },
-
-        setUrl: function (url) {
-            this._updating('url');
-            this._.url = Url.from(url);
-            return this;
-
-        },
-
-        setMethod: function (method) {
-            this._updating('method');
-            this._.method = method.toLowerCase();
-            return this;
-
-        },
-
-        setData: function (k, v) {
-            this._updating('data');
-
-            if (k === null) {
-                this._.data = {};
-
-            } else if (v === undefined && typeof k === 'object') {
-                for (v in k) {
-                    if (k.hasOwnProperty(v)) {
-                        this._.data[v] = k[v];
-
-                    }
-                }
-            } else {
-                this._.data[k] = v;
-
-            }
-
-            return this;
-
-        },
-
-        setHeader: function (header, value) {
-            this._updating('headers');
-            this._.headers[header] = value;
-            return this;
-
-        },
-
-        setHeaders: function (headers) {
-            this._updating('headers');
-
-            for (var header in headers) {
-                if (headers.hasOwnProperty(header)) {
-                    this._.headers[header] = headers[header];
-
-                }
-            }
-
-            return this;
-
-        },
-
-        abort: function () {
-            if (!this._.aborted) {
-                this._.aborted = true;
-                this.trigger('abort');
-
-            }
-
-            return this;
-
-        },
-
-        isAborted: function () {
-            return this._.aborted;
-
-        },
-
-        _normalize: function() {
-            if (this._.normalized || !this.isFrozen()) {
-                return;
-
-            }
-
-            this._.normalized = true;
-
-            if (this._.method === 'GET' || this._.method === 'HEAD') {
-                this._.url.addParams(this._.data instanceof FormData ? this._.data.exportData(true) : this._.data);
-                this._.data = {};
-
-            }
-        }
-    });
-
-    _context.mixin(Request, 'Nittro.Freezable');
-    _context.register(Request, 'Request');
-
-}, {
-    Url: 'Utils.Url'
-});
-;
-_context.invoke('Nittro.Ajax', function () {
-
-    var Response = _context.extend(function(status, payload, headers) {
-        this._ = {
-            status: status,
-            payload: payload,
-            headers: headers
-        };
-    }, {
-        getStatus: function () {
-            return this._.status;
-
-        },
-
-        getPayload: function () {
-            return this._.payload;
-
-        },
-
-        getHeader: function (name) {
-            return this._.headers[name.toLowerCase()];
-
-        },
-
-        getAllHeaders: function () {
-            return this._.headers;
-
-        }
-    });
-
-    _context.register(Response, 'Response');
-
-});
-;
-_context.invoke('Nittro.Ajax', function (Request) {
-
-    var Service = _context.extend('Nittro.Object', function () {
-        Service.Super.call(this);
-
-        this._.transports = [];
-
-    }, {
-        addTransport: function (transport) {
-            this._.transports.push(transport);
-            return this;
-
-        },
-
-        'get': function (url, data) {
-            return this.dispatch(this.createRequest(url, 'get', data));
-
-        },
-
-        post: function (url, data) {
-            return this.dispatch(this.createRequest(url, 'post', data));
-
-        },
-
-        createRequest: function (url, method, data) {
-            var request = new Request(url, method, data);
-            this.trigger('request-created', {request: request});
-            return request;
-
-        },
-
-        dispatch: function (request) {
-            request.freeze();
-
-            for (var i = 0; i < this._.transports.length; i++) {
-                try {
-                    return this._.transports[i].dispatch(request);
-
-                } catch (e) { console.log(e); }
-            }
-
-            throw new Error('No transport is able to dispatch this request');
-
-        }
-    });
-
-    _context.register(Service, 'Service');
-
-});
-;
-_context.invoke('Nittro.Ajax.Transport', function (Response, FormData, Url) {
-
-    var Native = _context.extend(function() {
-
-    }, {
-        STATIC: {
-            createXhr: function () {
-                if (window.XMLHttpRequest) {
-                    return new XMLHttpRequest();
-
-                } else if (window.ActiveXObject) {
-                    try {
-                        return new ActiveXObject('Msxml2.XMLHTTP');
-
-                    } catch (e) {
-                        return new ActiveXObject('Microsoft.XMLHTTP');
-
-                    }
-                }
-            }
-        },
-
-        dispatch: function (request) {
-            var xhr = Native.createXhr(),
-                adv = this.checkSupport(xhr),
-                self = this;
-
-            var abort = function () {
-                xhr.abort();
-
-            };
-
-            var cleanup = function () {
-                request.off('abort', abort);
-
-            };
-
-            request.on('abort', abort);
-
-            return new Promise(function (fulfill, reject) {
-                if (request.isAborted()) {
-                    cleanup();
-                    reject(self._createError(xhr, {type: 'abort'}));
-
-                }
-
-                self._bindEvents(request, xhr, adv, cleanup, fulfill, reject);
-
-                xhr.open(request.getMethod(), request.getUrl().toAbsolute(), true);
-
-                var data = self._formatData(request, xhr);
-                self._addHeaders(request, xhr);
-                xhr.send(data);
-
-            });
-        },
-
-        checkSupport: function (xhr) {
-            var adv;
-
-            if (!(adv = 'addEventListener' in xhr) && !('onreadystatechange' in xhr)) {
-                throw new Error('Unsupported XHR implementation');
-
-            }
-
-            return adv;
-
-        },
-
-        _bindEvents: function (request, xhr, adv, cleanup, fulfill, reject) {
-            var self = this;
-
-            var onLoad = function (evt) {
-                cleanup();
-
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    var response = self._createResponse(xhr);
-                    request.trigger('success', response);
-                    fulfill(response);
-
-                } else {
-                    var err = self._createError(xhr, evt);
-                    request.trigger('error', err);
-                    reject(err);
-
-                }
-            };
-
-            var onError = function (evt) {
-                cleanup();
-                var err = self._createError(xhr, evt);
-                request.trigger('error', err);
-                reject(err);
-
-            };
-
-            var onProgress = function (evt) {
-                request.trigger('progress', {
-                    lengthComputable: evt.lengthComputable,
-                    loaded: evt.loaded,
-                    total: evt.total
-                });
-            };
-
-            if (adv) {
-                xhr.addEventListener('load', onLoad, false);
-                xhr.addEventListener('error', onError, false);
-                xhr.addEventListener('abort', onError, false);
-
-                if ('upload' in xhr) {
-                    xhr.upload.addEventListener('progress', onProgress, false);
-
-                }
-            } else {
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4) {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            onLoad();
-
-                        } else {
-                            onError();
-
-                        }
-                    }
-                };
-
-                if ('ontimeout' in xhr) {
-                    xhr.ontimeout = onError;
-
-                }
-
-                if ('onerror' in xhr) {
-                    xhr.onerror = onError;
-
-                }
-
-                if ('onload' in xhr) {
-                    xhr.onload = onLoad;
-
-                }
-            }
-        },
-
-        _addHeaders: function (request, xhr) {
-            var headers = request.getHeaders(),
-                h;
-
-            for (h in headers) {
-                if (headers.hasOwnProperty(h)) {
-                    xhr.setRequestHeader(h, headers[h]);
-
-                }
-            }
-
-            if (!headers.hasOwnProperty('X-Requested-With')) {
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-
-            }
-        },
-
-        _formatData: function (request, xhr) {
-            var data = request.getData();
-
-            if (data instanceof FormData) {
-                data = data.exportData(request.isGet() || request.isMethod('HEAD'));
-
-                if (!(data instanceof window.FormData)) {
-                    data = Url.buildQuery(data, true);
-                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-                }
-            } else {
-                data = Url.buildQuery(data);
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-            }
-
-            return data;
-
-        },
-
-        _createResponse: function (xhr) {
-            var payload,
-                headers = {};
-
-            (xhr.getAllResponseHeaders() || '').trim().split(/\r\n/g).forEach(function(header) {
-                if (header && !header.match(/^\s+$/)) {
-                    header = header.match(/^\s*([^:]+):\s*(.+)\s*$/);
-                    headers[header[1].toLowerCase()] = header[2];
-
-                }
-            });
-
-            if (headers['content-type'] && headers['content-type'].split(/;/)[0] === 'application/json') {
-                payload = JSON.parse(xhr.responseText || '{}');
-
-            } else {
-                payload = xhr.responseText;
-
-            }
-
-            return new Response(xhr.status, payload, headers);
-
-        },
-
-        _createError: function (xhr, evt) {
-            var response = null;
-
-            if (xhr.readyState === 4 && xhr.status !== 0) {
-                response = this._createResponse(xhr);
-
-            }
-
-            if (evt && evt.type === 'abort') {
-                return {
-                    type: 'abort',
-                    status: null,
-                    response: response
-                };
-            } else if (xhr.status === 0) {
-                return {
-                    type: 'connection',
-                    status: null,
-                    response: response
-                };
-            } else if (xhr.status < 200 || xhr.status >= 300) {
-                return {
-                    type: 'response',
-                    status: xhr.status,
-                    response: response
-                };
-            }
-
-            return {
-                type: 'unknown',
-                status: xhr.status,
-                response: response
-            };
-        }
-    });
-
-    _context.register(Native, 'Native');
-
-}, {
-    Url: 'Utils.Url',
-    Response: 'Nittro.Ajax.Response',
-    FormData: 'Nittro.Ajax.FormData'
-});
-;
 _context.invoke('Nittro.Page', function (DOM, undefined) {
 
     var Snippet = _context.extend(function (id, state) {
@@ -1391,12 +837,11 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 ;
 _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snippet) {
 
-    var Service = _context.extend('Nittro.Object', function (ajax, transitions, flashMessages, options) {
+    var Service = _context.extend('Nittro.Object', function (ajax, transitions, options) {
         Service.Super.call(this);
 
         this._.ajax = ajax;
         this._.transitions = transitions;
-        this._.flashMessages = flashMessages;
         this._.request = null;
         this._.snippets = {};
         this._.containerCache = null;
@@ -1796,7 +1241,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             for (id in flashes) {
                 if (flashes.hasOwnProperty(id) && flashes[id]) {
                     for (i = 0; i < flashes[id].length; i++) {
-                        this._.flashMessages.add(null, flashes[id][i].type, flashes[id][i].message);
+                        this.trigger('flash', flashes[id][i]);
 
                     }
                 }
@@ -1823,11 +1268,15 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         _showError: function (evt) {
             if (evt.data.type === 'connection') {
-                this._.flashMessages.add(null, 'error', 'There was an error connecting to the server. Please check your internet connection and try again.');
-
+                this.trigger('flash', {
+                    type: 'error',
+                    message: 'There was an error connecting to the server. Please check your internet connection and try again.'
+                });
             } else if (evt.data.type !== 'abort') {
-                this._.flashMessages.add(null, 'error', 'There was an error processing your request. Please try again later.');
-
+                this.trigger('flash', {
+                    type: 'error',
+                    message: 'There was an error processing your request. Please try again later.'
+                });
             }
         }
     });
@@ -1842,219 +1291,46 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
     Url: 'Utils.Url'
 });
 ;
-_context.invoke('Nittro.Widgets', function (DOM, Arrays) {
+_context.invoke('Nittro.Page.Bridges', function () {
 
-    var FlashMessages = _context.extend(function (options) {
-        this._ = {
-            options: Arrays.mergeTree({}, FlashMessages.defaults, options),
-            globalHolder: DOM.create('div', {'class': 'flash-global-holder'})
-        };
-
-        this._.options.layer.appendChild(this._.globalHolder);
-
-        if (!this._.options.positioning) {
-            this._.options.positioning = FlashMessages.basicPositioning;
-
-        }
-
+    var PageDI = _context.extend('Nittro.DI.BuilderExtension', function (containerBuilder, config) {
+        PageDI.Super.call(this, containerBuilder, config);
     }, {
-        STATIC: {
-            defaults: {
-                layer: null,
-                minMargin: 20,
-                positioning: null
-            },
-            basicPositioning: [
-                function(target, elem, minMargin) {
-                    var res = {
-                        name: 'below',
-                        left: target.left + (target.width - elem.width) / 2,
-                        top: target.bottom
-                    };
+        load: function () {
+            var builder = this._getContainerBuilder(),
+                config = this._getConfig();
 
-                    if (target.bottom + elem.height + minMargin < window.innerHeight && res.left > 0 && res.left + elem.width < window.innerWidth) {
-                        return res;
-
-                    }
+            builder.addServiceDefinition('page', {
+                factory: 'Nittro.Page.Service()',
+                args: {
+                    options: config
                 },
-                function (target, elem, minMargin) {
-                    var res = {
-                        name: 'rightOf',
-                        left: target.right,
-                        top: target.top + (target.height - elem.height) / 2
-                    };
-
-                    if (target.right + elem.width + minMargin < window.innerWidth && res.top > 0 && res.top + elem.height < window.innerHeight) {
-                        return res;
-
-                    }
-                },
-                function (target, elem, minMargin) {
-                    var res = {
-                        name: 'above',
-                        left: target.left + (target.width - elem.width) / 2,
-                        top: target.top - elem.height
-                    };
-
-                    if (target.top > elem.height + minMargin && res.left > 0 && res.left + elem.width < window.innerWidth) {
-                        return res;
-
-                    }
-                },
-                function (target, elem, minMargin) {
-                    var res = {
-                        name: 'leftOf',
-                        left: target.left - elem.width,
-                        top: target.top + (target.height - elem.height) / 2
-                    };
-
-                    if (target.left > elem.width + minMargin && res.top > 0 && res.top + elem.height < window.innerHeight) {
-                        return res;
-
-                    }
-                }
-            ]
-        },
-        add: function (target, type, content, rich) {
-            var elem = DOM.create('div', {
-                'class': 'flash flash-' + (type || 'info')
+                run: true
             });
 
-            if (target && typeof target === 'string') {
-                target = DOM.getById(target);
-
-            }
-
-            var targetClass = target ? DOM.getData(target, 'flash-class') : null;
-
-            if (targetClass) {
-                DOM.addClass(elem, targetClass);
-
-            }
-
-            if (rich) {
-                DOM.html(elem, content);
-
-            } else {
-                DOM.addClass(elem, 'flash-plain');
-                elem.textContent = content;
-
-            }
-
-            DOM.setStyle(elem, 'opacity', 0);
-            this._.options.layer.appendChild(elem);
-
-            var style = {},
-                timeout = Math.max(2000, Math.round(elem.textContent.split(/\s+/).length / 0.003));
-
-            if (target) {
-                var fixed = this._hasFixedParent(target),
-                    elemRect = this._getRect(elem),
-                    targetRect = this._getRect(target),
-                    position;
-
-                if (fixed) {
-                    style.position = 'fixed';
-
-                }
-
-                for (var i = 0; i < this._.options.positioning.length; i++) {
-                    if (position = this._.options.positioning[i].call(null, targetRect, elemRect, this._.options.minMargin)) {
-                        break;
-
-                    }
-                }
-
-                if (position) {
-                    style.left = position.left;
-                    style.top = position.top;
-
-                    if (!fixed) {
-                        style.left += window.pageXOffset;
-                        style.top += window.pageYOffset;
-
-                    }
-
-                    style.left += 'px';
-                    style.top += 'px';
-                    style.opacity = '';
-
-                    DOM.setStyle(elem, style);
-                    this._show(elem, position.name, timeout);
-                    return;
-
-                }
-            }
-
-            this._.globalHolder.appendChild(elem);
-            DOM.setStyle(elem, 'opacity', '');
-            this._show(elem, 'global', timeout);
+            builder.addServiceDefinition('transitions', 'Nittro.Page.Transitions(300)');
 
         },
 
-        _show: function (elem, position, timeout) {
-            DOM.addClass(elem, 'flash-show flash-' + position);
+        setup: function() {
+            var builder = this._getContainerBuilder();
 
-            window.setTimeout(function () {
-                var foo = window.pageYOffset; // need to force css recalculation
-                DOM.removeClass(elem, 'flash-show');
-                this._bindHide(elem, timeout);
+            if (builder.hasServiceDefinition('formLocator')) {
+                builder.getServiceDefinition('page')
+                    .addSetup('::setFormLocator()');
+            }
 
-            }.bind(this), 1);
-        },
-
-        _bindHide: function (elem, timeout) {
-            var hide = function () {
-                DOM.removeListener(document, 'mousemove', hide);
-                DOM.removeListener(document, 'mousedown', hide);
-                DOM.removeListener(document, 'keydown', hide);
-                DOM.removeListener(document, 'touchstart', hide);
-
-                window.setTimeout(function () {
-                    DOM.addClass(elem, 'flash-hide');
-
-                    window.setTimeout(function () {
-                        elem.parentNode.removeChild(elem);
-
-                    }, 1000);
-                }, timeout);
-            }.bind(this);
-
-            DOM.addListener(document, 'mousemove', hide);
-            DOM.addListener(document, 'mousedown', hide);
-            DOM.addListener(document, 'keydown', hide);
-            DOM.addListener(document, 'touchstart', hide);
-
-        },
-
-        _hasFixedParent: function (elem) {
-            do {
-                if (elem.style.position === 'fixed') return true;
-                elem = elem.offsetParent;
-
-            } while (elem && elem !== document.documentElement && elem !== document.body);
-
-            return false;
-
-        },
-
-        _getRect: function (elem) {
-            var rect = elem.getBoundingClientRect();
-
-            return {
-                left: rect.left,
-                top: rect.top,
-                right: rect.right,
-                bottom: rect.bottom,
-                width: 'width' in rect ? rect.width : (rect.right - rect.left),
-                height: 'height' in rect ? rect.height : (rect.bottom - rect.top)
-            };
+            if (builder.hasServiceDefinition('flashes')) {
+                builder.getServiceDefinition('page')
+                    .addSetup(function(flashes) {
+                        this.on('flash', function(evt) {
+                            flashes.add(null, evt.data.type, evt.data.message);
+                        });
+                    });
+            }
         }
     });
 
-    _context.register(FlashMessages, 'FlashMessages');
+    _context.register(PageDI, 'PageDI');
 
-}, {
-    DOM: 'Utils.DOM',
-    Arrays: 'Utils.Arrays'
 });

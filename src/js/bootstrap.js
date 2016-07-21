@@ -2,7 +2,7 @@ _context.invoke(function (Nittro) {
 
     var ajax = new Nittro.Ajax.Service(),
         transitions = new Nittro.Page.Transitions(300),
-        flashes;
+        flashes = null;
 
     ajax.addTransport(new Nittro.Ajax.Transport.Native());
 
@@ -11,10 +11,11 @@ _context.invoke(function (Nittro) {
         defaultTransition: '.transition-auto'
     });
 
-    if (Nittro.Widgets && Nittro.Widgets.Flashes) {
-        flashes = new Nittro.Widgets.Flashes({ layer: document.body });
+    if (Nittro.Extras && Nittro.Extras.Flashes) {
+        flashes = new Nittro.Extras.Flashes.Service({ layer: document.body });
 
         page.on('flash', function(evt) {
+            evt.preventDefault();
             flashes.add(null, evt.data.type, evt.data.message);
         });
     }
