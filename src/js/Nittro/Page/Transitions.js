@@ -27,12 +27,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
     }, {
         transitionOut: function (elements) {
-            return this._begin(elements, 'transition-out');
+            return this._begin(elements, 'nittro-transition-out');
 
         },
 
         transitionIn: function (elements) {
-            return this._begin(elements, 'transition-in');
+            return this._begin(elements, 'nittro-transition-in');
 
         },
 
@@ -56,22 +56,22 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             this._.ready = false;
 
-            if (className === 'transition-in') {
+            if (className === 'nittro-transition-in') {
                 var foo = window.pageXOffset; // needed to force layout and thus run asynchronously
 
             }
 
-            DOM.addClass(elements, 'transition-active ' + className);
-            DOM.removeClass(elements, 'transition-middle');
+            DOM.addClass(elements, 'nittro-transition-active ' + className);
+            DOM.removeClass(elements, 'nittro-transition-middle');
 
             var duration = this._getDuration(elements);
 
             var promise = new Promise(function (fulfill) {
                 window.setTimeout(function () {
-                    DOM.removeClass(elements, 'transition-active ' + className);
+                    DOM.removeClass(elements, 'nittro-transition-active ' + className);
 
-                    if (className === 'transition-out') {
-                        DOM.addClass(elements, 'transition-middle');
+                    if (className === 'nittro-transition-out') {
+                        DOM.addClass(elements, 'nittro-transition-middle');
 
                     }
 
@@ -116,7 +116,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
                     }));
                 });
-            
+
             if (durations.length) {
                 return Math.max.apply(null, durations);
 

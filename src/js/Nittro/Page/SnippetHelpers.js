@@ -21,7 +21,7 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
 
         _getDynamicContainerCache: function () {
             if (this._.containerCache === null) {
-                this._.containerCache = DOM.getByClassName('snippet-container')
+                this._.containerCache = DOM.getByClassName('nittro-snippet-container')
                     .map(function (elem) {
                         return elem.id;
                     });
@@ -83,11 +83,11 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
 
             return dynamic.map(function (snippet) {
                 if (!snippet.elem) {
-                    DOM.addClass(snippet.content, 'dynamic-add');
+                    DOM.addClass(snippet.content, 'nittro-dynamic-add');
                     return snippet.content;
 
                 } else {
-                    DOM.addClass(snippet.elem, 'dynamic-update');
+                    DOM.addClass(snippet.elem, 'nittro-dynamic-update');
                     return snippet.elem;
 
                 }
@@ -146,7 +146,7 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
                 dyn;
 
             if (snippet) {
-                dyn = DOM.hasClass(snippet.parentNode, 'snippet-container');
+                dyn = DOM.hasClass(snippet.parentNode, 'nittro-snippet-container');
 
                 if (!removeElms.length || removeElms.indexOf(snippet) === -1) {
                     this._cleanupChildSnippets(snippet, teardown);

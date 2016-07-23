@@ -175,7 +175,7 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
 
         _getDynamicContainerCache: function () {
             if (this._.containerCache === null) {
-                this._.containerCache = DOM.getByClassName('snippet-container')
+                this._.containerCache = DOM.getByClassName('nittro-snippet-container')
                     .map(function (elem) {
                         return elem.id;
                     });
@@ -237,11 +237,11 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
 
             return dynamic.map(function (snippet) {
                 if (!snippet.elem) {
-                    DOM.addClass(snippet.content, 'dynamic-add');
+                    DOM.addClass(snippet.content, 'nittro-dynamic-add');
                     return snippet.content;
 
                 } else {
-                    DOM.addClass(snippet.elem, 'dynamic-update');
+                    DOM.addClass(snippet.elem, 'nittro-dynamic-update');
                     return snippet.elem;
 
                 }
@@ -300,7 +300,7 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
                 dyn;
 
             if (snippet) {
-                dyn = DOM.hasClass(snippet.parentNode, 'snippet-container');
+                dyn = DOM.hasClass(snippet.parentNode, 'nittro-snippet-container');
 
                 if (!removeElms.length || removeElms.indexOf(snippet) === -1) {
                     this._cleanupChildSnippets(snippet, teardown);
@@ -728,12 +728,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
     }, {
         transitionOut: function (elements) {
-            return this._begin(elements, 'transition-out');
+            return this._begin(elements, 'nittro-transition-out');
 
         },
 
         transitionIn: function (elements) {
-            return this._begin(elements, 'transition-in');
+            return this._begin(elements, 'nittro-transition-in');
 
         },
 
@@ -757,22 +757,22 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             this._.ready = false;
 
-            if (className === 'transition-in') {
+            if (className === 'nittro-transition-in') {
                 var foo = window.pageXOffset; // needed to force layout and thus run asynchronously
 
             }
 
-            DOM.addClass(elements, 'transition-active ' + className);
-            DOM.removeClass(elements, 'transition-middle');
+            DOM.addClass(elements, 'nittro-transition-active ' + className);
+            DOM.removeClass(elements, 'nittro-transition-middle');
 
             var duration = this._getDuration(elements);
 
             var promise = new Promise(function (fulfill) {
                 window.setTimeout(function () {
-                    DOM.removeClass(elements, 'transition-active ' + className);
+                    DOM.removeClass(elements, 'nittro-transition-active ' + className);
 
-                    if (className === 'transition-out') {
-                        DOM.addClass(elements, 'transition-middle');
+                    if (className === 'nittro-transition-out') {
+                        DOM.addClass(elements, 'nittro-transition-middle');
 
                     }
 
@@ -817,7 +817,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
                     }));
                 });
-            
+
             if (durations.length) {
                 return Math.max.apply(null, durations);
 
@@ -1120,7 +1120,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 removeElms = this._getRemoveTargets(context);
 
                 if (removeElms.length) {
-                    DOM.addClass(removeElms, 'dynamic-remove');
+                    DOM.addClass(removeElms, 'nittro-dynamic-remove');
 
                 }
 
@@ -1171,7 +1171,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             this._.request = this._.transitioning = null;
 
             var dynamic = this._applySnippets(payload.snippets || {}, removeElms);
-            DOM.toggleClass(dynamic, 'transition-middle', true);
+            DOM.toggleClass(dynamic, 'nittro-transition-middle', true);
 
             this._showHtmlFlashes();
 
@@ -1179,7 +1179,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
             this._.transitions.transitionIn(transitionElms.concat(dynamic))
                 .then(function () {
-                    DOM.removeClass(dynamic, 'dynamic-add dynamic-update');
+                    DOM.removeClass(dynamic, 'nittro-dynamic-add nittro-dynamic-update');
 
                 });
 

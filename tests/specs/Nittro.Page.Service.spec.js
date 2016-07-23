@@ -17,7 +17,7 @@ describe('Nittro.Page.Service', function () {
         testContainer = document.createElement('div');
         document.body.appendChild(testContainer);
 
-        testContainer.innerHTML = '<div id="snippet-test" class="transition-fade transition-auto"><h2>Test snippet</h2></div>';
+        testContainer.innerHTML = '<div id="snippet-test" class="nittro-transition-fade nittro-transition-auto"><h2>Test snippet</h2></div>';
 
     });
 
@@ -75,7 +75,7 @@ describe('Nittro.Page.Service', function () {
 
     describe('dynamic snippets', function () {
         it('should be appended by default', function (done) {
-            testContainer.innerHTML = '<div id="snippet-test-dynamic" class="snippet-container" data-dynamic-mask="snippet-dynamic-\\d+"></div>';
+            testContainer.innerHTML = '<div id="snippet-test-dynamic" class="nittro-snippet-container" data-dynamic-mask="snippet-dynamic-\\d+"></div>';
 
             var payload = {
                 snippets: {

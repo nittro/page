@@ -283,7 +283,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 removeElms = this._getRemoveTargets(context);
 
                 if (removeElms.length) {
-                    DOM.addClass(removeElms, 'dynamic-remove');
+                    DOM.addClass(removeElms, 'nittro-dynamic-remove');
 
                 }
 
@@ -334,7 +334,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             this._.request = this._.transitioning = null;
 
             var dynamic = this._applySnippets(payload.snippets || {}, removeElms);
-            DOM.toggleClass(dynamic, 'transition-middle', true);
+            DOM.toggleClass(dynamic, 'nittro-transition-middle', true);
 
             this._showHtmlFlashes();
 
@@ -342,7 +342,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
             this._.transitions.transitionIn(transitionElms.concat(dynamic))
                 .then(function () {
-                    DOM.removeClass(dynamic, 'dynamic-add dynamic-update');
+                    DOM.removeClass(dynamic, 'nittro-dynamic-add nittro-dynamic-update');
 
                 });
 

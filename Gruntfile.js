@@ -1,12 +1,6 @@
 module.exports = function (grunt) {
 
-    var files = [
-        'src/js/Nittro/Page/Snippet.js',
-        'src/js/Nittro/Page/SnippetHelpers.js',
-        'src/js/Nittro/Page/Transitions.js',
-        'src/js/Nittro/Page/Service.js',
-        'src/js/Nittro/Page/Bridges/PageDI.js'
-    ];
+    var files = grunt.file.readJSON('nittro.json').files;
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -18,7 +12,7 @@ module.exports = function (grunt) {
             },
             nittro: {
                 files: {
-                    'dist/js/nittro-page.min.js': files
+                    'dist/js/nittro-page.min.js': files.js
                 }
             }
         },
@@ -29,7 +23,7 @@ module.exports = function (grunt) {
             },
             nittro: {
                 files: {
-                    'dist/js/nittro-page.js': files
+                    'dist/js/nittro-page.js': files.js
                 }
             }
         },
@@ -40,9 +34,7 @@ module.exports = function (grunt) {
                     compress: true
                 },
                 files: {
-                    'dist/css/nittro-page.min.css': [
-                        'src/css/transitions.less'
-                    ]
+                    'dist/css/nittro-page.min.css': files.css
                 }
             },
             full: {
@@ -50,15 +42,13 @@ module.exports = function (grunt) {
                     compress: false
                 },
                 files: {
-                    'dist/css/nittro-page.css': [
-                        'src/css/transitions.less'
-                    ]
+                    'dist/css/nittro-page.css': files.css
                 }
             }
         },
 
         jasmine: {
-            src: files.concat(
+            src: files.js.concat(
                 'tests/mocks/Ajax.js'
             ),
             options: {

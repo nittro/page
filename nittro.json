@@ -1,0 +1,19 @@
+{
+    "files": {
+        "js": [
+            "src/js/Nittro/Page/Snippet.js",
+            "src/js/Nittro/Page/SnippetHelpers.js",
+            "src/js/Nittro/Page/Transitions.js",
+            "src/js/Nittro/Page/Service.js",
+            "src/js/Nittro/Page/Bridges/PageDI.js"
+        ],
+        "css": [
+            "src/css/transitions.less"
+        ]
+    },
+    "compat": {
+        "es5": true,
+        "transitions": true,
+        "transform": true
+    }
+}
