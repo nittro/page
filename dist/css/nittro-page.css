@@ -55,6 +55,7 @@
   -o-transform: none;
   transform: none;
 }
+.nittro-transition-dim.nittro-transition-out,
 .nittro-transition-dim.nittro-transition-out::before {
   -webkit-transition: opacity .2s;
   -moz-transition: opacity .2s;
@@ -67,6 +68,7 @@
 .nittro-transition-dim.nittro-transition-middle {
   opacity: 1;
 }
+.nittro-transition-dim.nittro-transition-in,
 .nittro-transition-dim.nittro-transition-in::before {
   -webkit-transition: opacity .3s;
   -moz-transition: opacity .3s;
