@@ -11,6 +11,7 @@
             "src/css/transitions.less"
         ]
     },
+    "di": "Nittro.Page.Bridges.PageDI()",
     "compat": {
         "es5": true,
         "transitions": true,
