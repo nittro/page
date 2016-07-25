@@ -15,6 +15,7 @@
     "compat": {
         "es5": true,
         "transitions": true,
-        "transform": true
+        "transform": true,
+        "historyApi": true
     }
 }
