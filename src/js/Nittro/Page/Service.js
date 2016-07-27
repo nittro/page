@@ -259,7 +259,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             var request = this._.ajax.createRequest(url, method, data);
 
             try {
-                var p = this._dispatchRequest(request, context, true);
+                var pushState = DOM.getData(context, 'push-state');
+                var p = this._dispatchRequest(request, context, pushState === null ? true : pushState);
                 evt && evt.preventDefault();
                 return p;
 
