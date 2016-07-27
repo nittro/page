@@ -259,10 +259,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             var request = this._.ajax.createRequest(url, method, data);
 
             try {
-                var pushState = DOM.getData(context, 'push-state');
-                var p = this._dispatchRequest(request, context, pushState === null ? true : pushState);
+                var pushState = context ? !!DOM.getData(context, 'push-state', true) : true,
+                    promise = this._dispatchRequest(request, context, pushState);
+
                 evt && evt.preventDefault();
-                return p;
+
+                return promise;
 
             } catch (e) {
                 return Promise.reject(e);
