@@ -1,10 +1,10 @@
-_context.invoke('Nittro.Page', function (Snippet, DOM) {
+_context.invoke('Nittro.Page', function (Snippet, DOM, undefined) {
 
     var SnippetHelpers = {
         _getTransitionTargets: function (elem) {
             var sel = DOM.getData(elem, 'transition');
 
-            if (sel === null && !DOM.getData(elem, 'dynamic-remove')) {
+            if (sel === undefined && !DOM.getData(elem, 'dynamic-remove')) {
                 sel = this._.options.defaultTransition;
 
             }
@@ -464,7 +464,7 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
         _getDataExtractor: function (sel, prop) {
             return function (elem) {
                 elem = elem.getElementsByClassName(sel);
-                return elem.length ? DOM.getData(elem[0], prop) : null;
+                return elem.length ? DOM.getData(elem[0], prop, null) : null;
             };
         },
 
