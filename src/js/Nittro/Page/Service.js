@@ -180,7 +180,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _handleClick: function (evt) {
-            if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey) {
+            if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey || evt.button > 0) {
                 return;
 
             }
