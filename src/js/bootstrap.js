@@ -7,7 +7,7 @@ _context.invoke(function (Nittro) {
         historyAgent = new Nittro.Page.HistoryAgent(),
         transitionHelper = new Nittro.Page.TransitionHelper(),
         transitionAgent = new Nittro.Page.TransitionAgent(transitionHelper),
-        flashes = new Nittro.Extras.Flashes.Service({ layer: document.body }),
+        flashes = new Nittro.Extras.Flashes.Service(),
         flashAgent = new Nittro.Page.Bridges.PageFlashes.FlashAgent(flashes);
 
     ajax.addTransport(new Nittro.Ajax.Transport.Native());

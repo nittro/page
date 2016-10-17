@@ -48,22 +48,16 @@ module.exports = function (grunt) {
         },
 
         jasmine: {
-            src: files.js.concat(
-                'tests/mocks/Ajax.js'
-            ),
+            src: files.js,
             options: {
                 styles: [
-                    'bower_components/nittro-extras-flashes/dist/css/nittro-extras-flashes.css',
                     'dist/css/nittro-page.css'
                 ],
                 vendor: [
                     'bower_components/promiz/promiz.min.js',
                     'bower_components/nittro-core/dist/js/nittro-core.js',
                     'bower_components/nittro-ajax/dist/js/nittro-ajax.js',
-                    'bower_components/nittro-datetime/dist/js/nittro-datetime.js',
-                    'bower_components/nittro-neon/dist/js/nittro-neon.js',
-                    'bower_components/nittro-di/dist/js/nittro-di.js',
-                    'bower_components/nittro-extras-flashes/dist/js/nittro-extras-flashes.js'
+                    'tests/mocks/Ajax.js'
                 ],
                 specs: 'tests/specs/**.spec.js',
                 display: 'short',

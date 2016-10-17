@@ -1,23 +1,44 @@
 describe('Nittro.Page.Service', function () {
 
-    var Page, Transitions, Ajax, MockRequest,
+    var Page, SnippetManager, SnippetAgent, Ajax, AjaxAgent, HistoryAgent, TransitionHelper, TransitionAgent, MockRequest,
+        snippetManager,
+        snippetAgent,
         mockAjax,
+        ajaxAgent,
+        historyAgent,
+        transitionHelper,
+        transitionAgent,
         testInstance,
         testContainer;
 
     beforeAll(function () {
         Page = _context.lookup('Nittro.Page.Service');
-        Transitions = _context.lookup('Nittro.Page.Transitions');
+        SnippetManager = _context.lookup('Nittro.Page.SnippetManager');
+        SnippetAgent = _context.lookup('Nittro.Page.SnippetAgent');
         Ajax = _context.lookup('Mocks.Ajax.Service');
+        AjaxAgent = _context.lookup('Nittro.Page.AjaxAgent');
+        HistoryAgent = _context.lookup('Nittro.Page.HistoryAgent');
+        TransitionHelper = _context.lookup('Nittro.Page.TransitionHelper');
+        TransitionAgent = _context.lookup('Nittro.Page.TransitionAgent');
         MockRequest = _context.lookup('Mocks.Ajax.Request');
 
+        snippetManager = new SnippetManager();
+        snippetAgent = new SnippetAgent(snippetManager);
         mockAjax = new Ajax();
-        testInstance = new Page(mockAjax, new Transitions(200));
+        ajaxAgent = new AjaxAgent(mockAjax);
+        historyAgent = new HistoryAgent();
+        transitionHelper = new TransitionHelper();
+        transitionAgent = new TransitionAgent(transitionHelper);
+        testInstance = new Page(ajaxAgent, snippetAgent, historyAgent, snippetManager);
+
+        testInstance.on('transaction-created', function (evt) {
+            evt.data.transaction.add('transitions', transitionAgent);
+        });
 
         testContainer = document.createElement('div');
         document.body.appendChild(testContainer);
 
-        testContainer.innerHTML = '<div id="snippet-test" class="nittro-transition-fade nittro-transition-auto"><h2>Test snippet</h2></div>';
+        testContainer.innerHTML = '<div id="snippet-test" class="nittro-transition-fade"><h2>Test snippet</h2></div>';
 
     });
 
@@ -32,7 +53,7 @@ describe('Nittro.Page.Service', function () {
         it('should load an URL', function (done) {
             var payload = {
                 snippets: {
-                    'snippet-test': '<h2>Response loaded</h2><a href="/bar" id="test-link" class="ajax" data-transition="#snippet-test">Test link</a>'
+                    'snippet-test': '<h2>Response loaded</h2><a href="/bar" id="test-link" data-transition="#snippet-test">Test link</a>'
                 }
             };
             mockAjax.requests.push(new MockRequest('/foo', 'GET', {}, { payload: payload }));
@@ -58,14 +79,15 @@ describe('Nittro.Page.Service', function () {
 
             testInstance.openLink(document.getElementById('test-link'))
                 .then(function () {
-                    if (parseFloat(window.getComputedStyle(testContainer.firstChild).opacity) === 1) {
-                        done.fail('Transition wasn\'t applied');
-                        return;
-                    }
+                    window.setTimeout(function() {
+                        if (parseFloat(window.getComputedStyle(testContainer.firstChild).opacity) === 1) {
+                            done.fail('Transition wasn\'t applied');
+                            return;
+                        }
 
-                    expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Another one bites the dust');
-                    done();
-
+                        expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Another one bites the dust');
+                        done();
+                    }, 100);
                 }, function () {
                     done.fail('Response wasn\'t loaded');
                 });
