@@ -2,16 +2,35 @@
     "files": {
         "js": [
             "src/js/Nittro/Page/Snippet.js",
-            "src/js/Nittro/Page/SnippetHelpers.js",
-            "src/js/Nittro/Page/Transitions.js",
-            "src/js/Nittro/Page/Service.js",
-            "src/js/Nittro/Page/Bridges/PageDI.js"
+            "src/js/Nittro/Page/SnippetManagerHelpers.js",
+            "src/js/Nittro/Page/SnippetManager.js",
+            "src/js/Nittro/Page/SnippetAgent.js",
+            "src/js/Nittro/Page/AjaxAgent.js",
+            "src/js/Nittro/Page/HistoryAgent.js",
+            "src/js/Nittro/Page/TransitionHelper.js",
+            "src/js/Nittro/Page/TransitionAgent.js",
+            "src/js/Nittro/Page/Transaction.js",
+            "src/js/Nittro/Page/Service.js"
         ],
         "css": [
             "src/css/transitions.less"
         ]
     },
-    "di": "Nittro.Page.Bridges.PageDI()",
+    "bridges": {
+        "nittro-di": {
+            "files": [
+                "src/js/Nittro/Page/Bridges/PageDI/PageExtension.js"
+            ],
+            "extensions": {
+                "page": "Nittro.Page.Bridges.PageDI.PageExtension()"
+            }
+        },
+        "nittro-extras-flashes": {
+            "files": [
+                "src/js/Nittro/Page/Bridges/PageFlashes/FlashAgent.js"
+            ]
+        }
+    },
     "compat": {
         "es5": true,
         "transitions": true,

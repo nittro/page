@@ -22,7 +22,8 @@
     },
     "devDependencies": {
         "nittro-extras-flashes": "master",
-        "nittro-di": "master"
+        "nittro-di": "master",
+        "nittro-forms": "master"
     },
     "ignore": [
         "**/.*",

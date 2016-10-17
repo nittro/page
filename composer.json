@@ -16,7 +16,7 @@
         "nette/di": "^2.3",
         "nette/bootstrap": "^2.3",
         "nette/robot-loader": "^2.3",
-        "nittro/nette-bridges": "^1.0"
+        "nittro/nette-bridges": "dev-master as v2.0.0-rc.1"
     },
     "autoload-dev": {
         "psr-4": {

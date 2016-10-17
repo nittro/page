@@ -4,8 +4,17 @@
         <meta charset="utf-8" />
         <title>{$title}</title>
 
-        <link rel="stylesheet" type="text/css" href="../dist/css/nittro-page.min.css" />
-        <script type="text/javascript" src="../dist/js/nittro-page.full.min.js" async defer></script>
+        <link rel="stylesheet" type="text/css" href="/dist/css/nittro-page.css" />
+
+        <script type="text/javascript" src="/bower_components/promiz/promiz.js"></script>
+        <script type="text/javascript" src="/bower_components/nittro-core/dist/js/nittro-core.js"></script>
+        <script type="text/javascript" src="/bower_components/nittro-datetime/dist/js/nittro-datetime.js"></script>
+        <script type="text/javascript" src="/bower_components/nittro-neon/dist/js/nittro-neon.js"></script>
+        <script type="text/javascript" src="/bower_components/nittro-di/dist/js/nittro-di.js"></script>
+        <script type="text/javascript" src="/bower_components/nittro-ajax/dist/js/nittro-ajax.js"></script>
+        <script type="text/javascript" src="/dist/js/nittro-page.js"></script>
+        <script type="text/javascript" src="/src/js/bootstrap.js"></script>
+        <script type="text/javascript" src="/bower_components/nittro-core/src/js/stack.js"></script>
     </head>
     <body>
         <h1 n:snippet="title">{$title}</h1>
@@ -18,7 +27,7 @@
             <a n:href="DynamicSnippets:sorted">Sorted dynamic snippets</a>
         </nav>
 
-        <div n:snippet="content" class="transition-slide transition-auto">
+        <div n:snippet="content" class="nittro-transition-slide nittro-transition-auto">
             {block content}{/block}
         </div>
     </body>

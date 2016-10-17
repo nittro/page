@@ -95,11 +95,11 @@
 }
 .nittro-transition-slide.nittro-transition-out {
   opacity: 0;
-  -webkit-transform: translateX(-5%);
-  -moz-transform: translateX(-5%);
-  -ms-transform: translateX(-5%);
-  -o-transform: translateX(-5%);
-  transform: translateX(-5%);
+  -webkit-transform: translateX(-50px);
+  -moz-transform: translateX(-50px);
+  -ms-transform: translateX(-50px);
+  -o-transform: translateX(-50px);
+  transform: translateX(-50px);
 }
 .nittro-transition-slide.nittro-transition-middle {
   -webkit-transition: none;
@@ -108,11 +108,11 @@
   -o-transition: none;
   transition: none;
   opacity: 0;
-  -webkit-transform: translateX(5%);
-  -moz-transform: translateX(5%);
-  -ms-transform: translateX(5%);
-  -o-transform: translateX(5%);
-  transform: translateX(5%);
+  -webkit-transform: translateX(50px);
+  -moz-transform: translateX(50px);
+  -ms-transform: translateX(50px);
+  -o-transform: translateX(50px);
+  transform: translateX(50px);
 }
 .nittro-transition-slide.nittro-transition-in {
   opacity: 1;

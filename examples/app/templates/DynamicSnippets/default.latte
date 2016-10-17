@@ -8,14 +8,14 @@
                 <td>&nbsp;</td>
             </tr>
         </thead>
-        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.transition-fade">
+        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.nittro-transition-fade">
             {foreach $entries as $entry}
-                <tr n:snippet="entry-$entry->id" class="transition-fade">
+                <tr n:snippet="entry-$entry->id" class="nittro-transition-fade">
                     <td>{$entry->id}</td>
                     <td>| {$entry->name} |</td>
                     <td>{$entry->value}</td>
                     <td>
-                        <a n:href="update! $entry->id" data-transition="#{snippetId entry-$entry->id}" title="Update entry">*</a>
+                        <a n:href="update! $entry->id" data-transition="false" title="Update entry">*</a>
                         <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
                     </td>
                 </tr>

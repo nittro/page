@@ -1,10 +1,10 @@
 _context.invoke('Nittro.Page', function (DOM, undefined) {
 
-    var Snippet = _context.extend(function (id, state) {
+    var Snippet = _context.extend(function (id, phase) {
         this._ = {
             id: id,
             container: false,
-            state: typeof state === 'number' ? state : Snippet.INACTIVE,
+            phase: typeof phase === 'number' ? phase : Snippet.INACTIVE,
             data: {},
             handlers: [
                 [], [], [], []
@@ -32,7 +32,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (prepare) {
-                if (this._.state === Snippet.PREPARE_SETUP) {
+                if (this._.phase === Snippet.PREPARE_SETUP) {
                     prepare(this.getElement());
 
                 } else {
@@ -42,7 +42,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (run) {
-                if (this._.state === Snippet.RUN_SETUP) {
+                if (this._.phase === Snippet.RUN_SETUP) {
                     run(this.getElement());
 
                 } else {
@@ -63,7 +63,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (prepare) {
-                if (this._.state === Snippet.PREPARE_TEARDOWN) {
+                if (this._.phase === Snippet.PREPARE_TEARDOWN) {
                     prepare(this.getElement());
 
                 } else {
@@ -73,7 +73,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (run) {
-                if (this._.state === Snippet.RUN_TEARDOWN) {
+                if (this._.phase === Snippet.RUN_TEARDOWN) {
                     run(this.getElement());
 
                 } else {
@@ -86,26 +86,26 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
 
         },
 
-        setState: function (state) {
-            if (state === Snippet.INACTIVE) {
-                this._.state = state;
+        runPhase: function (phase) {
+            if (phase === Snippet.INACTIVE) {
+                this._.phase = phase;
 
                 this._.handlers.forEach(function (queue) {
                     queue.splice(0, queue.length);
 
                 });
 
-            } else if (state - 1 === this._.state) {
-                this._.state = state;
+            } else if (phase - 1 === this._.phase) {
+                this._.phase = phase;
 
                 var elm = this.getElement();
 
-                this._.handlers[this._.state].forEach(function (handler) {
+                this._.handlers[this._.phase].forEach(function (handler) {
                     handler(elm);
 
                 });
 
-                this._.handlers[this._.state].splice(0, this._.handlers[this._.state].length);
+                this._.handlers[this._.phase].splice(0, this._.handlers[this._.phase].length);
 
             }
 
@@ -113,8 +113,8 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
 
         },
 
-        getState: function () {
-            return this._.state;
+        getPhase: function () {
+            return this._.phase;
 
         },
 

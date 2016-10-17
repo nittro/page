@@ -18,9 +18,9 @@
                 <td>&nbsp;</td>
             </tr>
         </thead>
-        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.transition-fade" data-dynamic-sort=".value(value)">
+        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.nittro-transition-fade" data-dynamic-sort=".value(value)">
             {foreach $entries as $entry}
-                <tr n:snippet="entry-$entry->id" class="transition-fade">
+                <tr n:snippet="entry-$entry->id" class="nittro-transition-fade">
                     <td>{$entry->id}</td>
                     <td>| {$entry->name} |</td>
                     <td class="value" data-value="{$entry->value}">{$entry->value}</td>

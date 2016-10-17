@@ -1,22 +1,19 @@
-_context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snippet) {
+_context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
-    var Service = _context.extend('Nittro.Object', function (ajax, transitions, options) {
+    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, options) {
         Service.Super.call(this);
 
-        this._.ajax = ajax;
-        this._.transitions = transitions;
-        this._.request = null;
-        this._.snippets = {};
-        this._.containerCache = null;
-        this._.currentPhase = Snippet.INACTIVE;
-        this._.transitioning = null;
-        this._.setup = false;
-        this._.currentUrl = Url.fromCurrent();
+        this._.ajaxAgent = ajaxAgent;
+        this._.snippetAgent = snippetAgent;
+        this._.historyAgent = historyAgent;
+        this._.snippetManager = snippetManager;
         this._.options = Arrays.mergeTree({}, Service.defaults, options);
+        this._.setup = false;
+        this._.currentTransaction = null;
+        this._.currentUrl = Url.fromCurrent();
 
-        DOM.addListener(document, 'click', this._handleClick.bind(this));
-        DOM.addListener(document, 'submit', this._handleSubmit.bind(this));
         DOM.addListener(window, 'popstate', this._handleState.bind(this));
+        DOM.addListener(document, 'click', this._handleLinkClick.bind(this));
         this.on('error:default', this._showError.bind(this));
 
         this._checkReady();
@@ -24,92 +21,47 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
     }, {
         STATIC: {
             defaults: {
-                whitelistRedirects: false,
-                whitelistLinks: true,
-                whitelistForms: true,
-                defaultTransition: null
+                whitelistLinks: false
             }
         },
 
-        setFormLocator: function (formLocator) {
-            this._.formLocator = formLocator;
-            return this;
+        open: function (url, method, data, context) {
+            try {
+                context || (context = {});
+                context.method = method;
+                context.data = data;
 
-        },
+                var transaction = this._createTransaction(url),
+                    promise;
 
-        open: function (url, method, data) {
-            return this._createRequest(url, method, data);
+                transaction.init(context);
 
+                promise = this._dispatchTransaction(transaction);
+
+                context.event && context.event.preventDefault();
+
+                return promise;
+
+            } catch (e) {
+                return Promise.reject(e);
+
+            }
         },
 
         openLink: function (link, evt) {
-            return this._createRequest(link.href, 'get', null, evt, link);
-
-        },
-
-        sendForm: function (form, evt) {
-            this._checkFormLocator(true);
-
-            var frm = this._.formLocator.getForm(form),
-                data = frm.serialize();
-
-            return this._createRequest(form.action, form.method, data, evt, form)
-                .then(function () {
-                    frm.reset();
-
-                });
+            return this.open(link.href, 'get', null, {
+                event: evt,
+                element: link
+            });
         },
 
         getSnippet: function (id) {
-            if (!this._.snippets[id]) {
-                this._.snippets[id] = new Snippet(id, this._.currentPhase);
-
-            }
-
-            return this._.snippets[id];
+            return this._.snippetManager.getSnippet(id);
 
         },
 
         isSnippet: function (elem) {
-            return (typeof elem === 'string' ? elem : elem.id) in this._.snippets;
-
-        },
-
-        saveHistoryState: function(url, title, replace) {
-            if (!title) {
-                title = document.title;
-            } else {
-                document.title = title;
-            }
-
-            if (url) {
-                url = Url.from(url);
-            } else {
-                url = Url.fromCurrent();
-            }
-
-            this._.currentUrl = url;
-
-            if (replace) {
-                window.history.replaceState({ _nittro: true }, title, url.toAbsolute());
-            } else {
-                window.history.pushState({ _nittro: true }, title, url.toAbsolute());
-            }
-
-            return this;
-
-        },
-
-        _checkFormLocator: function (need) {
-            if (this._.formLocator) {
-                return true;
-
-            } else if (!need) {
-                return false;
-
-            }
-
-            throw new Error("Nittro/Page service: Form support wasn't enabled. Please install Nittro/Application and inject the FormLocator service using the setFormLocator() method.");
+            return this._.snippetManager.isSnippet(elem);
 
         },
 
@@ -118,40 +70,21 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 return;
             }
 
-            var url, request;
-
             if (!this._checkUrl(null, this._.currentUrl)) {
                 return;
 
             }
 
-            url = Url.fromCurrent();
+            var url = Url.fromCurrent();
             this._.currentUrl = url;
-            request = this._.ajax.createRequest(url);
 
             try {
-                this._dispatchRequest(request);
+                this.open(url, 'get', null, {history: false});
 
             } catch (e) {
                 document.location.href = url.toAbsolute();
 
             }
-        },
-
-        _pushState: function (payload, url) {
-            if (payload.postGet) {
-                url = payload.url;
-
-            }
-
-            if (payload.title) {
-                document.title = payload.title;
-
-            }
-
-            this._.currentUrl = Url.from(url);
-            this.saveHistoryState(this._.currentUrl);
-
         },
 
         _checkReady: function () {
@@ -165,8 +98,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 this._.setup = true;
 
                 window.setTimeout(function () {
-                    this.saveHistoryState(null, null, true);
-                    this._setup();
+                    window.history.replaceState({_nittro: true}, document.title, document.location.href);
+                    this._.snippetManager.setup();
                     this._showHtmlFlashes();
                     this.trigger('update');
 
@@ -174,18 +107,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
         },
 
-        _checkLink: function (link) {
-            return this._.options.whitelistLinks ? DOM.hasClass(link, 'ajax') : !DOM.hasClass(link, 'noajax');
-
-        },
-
-        _handleClick: function (evt) {
+        _handleLinkClick: function(evt) {
             if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey || evt.button > 0) {
-                return;
-
-            }
-
-            if (this._checkFormLocator() && this._handleButton(evt)) {
                 return;
 
             }
@@ -201,199 +124,47 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         },
 
-        _checkForm: function (form) {
-            return this._.options.whitelistForms ? DOM.hasClass(form, 'ajax') : !DOM.hasClass(form, 'noajax');
+        _createTransaction: function(url) {
+            var transaction = new Transaction(url);
 
-        },
+            transaction.add('ajax', this._.ajaxAgent);
+            transaction.add('snippets', this._.snippetAgent);
+            transaction.add('history', this._.historyAgent);
 
-        _handleButton: function(evt) {
-            var btn = DOM.closest(evt.target, 'button') || DOM.closest(evt.target, 'input'),
-                frm;
-
-            if (btn && btn.type === 'submit') {
-                if (btn.form && this._checkForm(btn.form)) {
-                    frm = this._.formLocator.getForm(btn.form);
-                    frm.setSubmittedBy(btn.name || null);
-
-                }
-
-                return true;
-
-            }
-        },
-
-        _handleSubmit: function (evt) {
-            if (evt.defaultPrevented || !this._checkFormLocator()) {
-                return;
-
-            }
-
-            if (!(evt.target instanceof HTMLFormElement) || !this._checkForm(evt.target) || !this._checkUrl(evt.target.action)) {
-                return;
-
-            }
-
-            this.sendForm(evt.target, evt);
-
-        },
-
-        _createRequest: function (url, method, data, evt, context) {
-            if (this._.request) {
-                this._.request.abort();
-
-            }
-
-            var create = this.trigger('create-request', {
-                url: url,
-                method: method,
-                data: data,
-                context: context
+            this.trigger('transaction-created', {
+                transaction: transaction
             });
 
-            if (create.isDefaultPrevented()) {
-                evt && evt.preventDefault();
-                return Promise.reject();
-
-            }
-
-            var request = this._.ajax.createRequest(url, method, data);
-
-            try {
-                var pushState = context ? !!DOM.getData(context, 'push-state', true) : true,
-                    promise = this._dispatchRequest(request, context, pushState);
-
-                evt && evt.preventDefault();
-
-                return promise;
-
-            } catch (e) {
-                return Promise.reject(e);
-
-            }
-        },
-
-        _dispatchRequest: function (request, context, pushState) {
-            this._.request = request;
-
-            var xhr = this._.ajax.dispatch(request); // may throw exception
-
-            var transitionElms,
-                removeElms,
-                transition;
-
-            if (context) {
-                transitionElms = this._getTransitionTargets(context);
-                removeElms = this._getRemoveTargets(context);
-
-                if (removeElms.length) {
-                    DOM.addClass(removeElms, 'nittro-dynamic-remove');
-
-                }
-
-                this._.transitioning = transitionElms.concat(removeElms);
-                transition = this._.transitions.transitionOut(this._.transitioning.slice());
-
-            } else {
-                transitionElms = [];
-                removeElms = [];
-                transition = null;
-
-            }
-
-            var p = Promise.all([xhr, transitionElms, removeElms, pushState || false, transition]);
-            return p.then(this._handleResponse.bind(this), this._handleError.bind(this));
+            return transaction;
 
         },
 
-        _handleResponse: function (queue) {
-            if (!this._.request) {
-                this._cleanup();
-                return null;
-
+        _dispatchTransaction: function(transaction) {
+            if (this._.currentTransaction) {
+                this._.currentTransaction.abort();
             }
 
-            var response = queue[0],
-                transitionElms = queue[1] || this._.transitioning || [],
-                removeElms = queue[2],
-                pushState = queue[3],
-                payload = response.getPayload();
+            this._.currentTransaction = transaction;
 
-            if (typeof payload !== 'object' || !payload) {
-                this._cleanup();
-                return null;
-
-            }
-
-            this._showFlashes(payload.flashes);
-
-            if (this._tryRedirect(payload, pushState)) {
-                return payload;
-
-            } else if (pushState) {
-                this._pushState(payload, this._.request.getUrl());
-
-            }
-
-            this._.request = this._.transitioning = null;
-
-            var dynamic = this._applySnippets(payload.snippets || {}, removeElms);
-            DOM.toggleClass(dynamic, 'nittro-transition-middle', true);
-
-            this._showHtmlFlashes();
-
-            this.trigger('update', payload);
-
-            this._.transitions.transitionIn(transitionElms.concat(dynamic))
-                .then(function () {
-                    DOM.removeClass(dynamic, 'nittro-dynamic-add nittro-dynamic-update');
-
-                });
-
-            return payload;
+            return transaction.dispatch().then(
+                this._handleSuccess.bind(this, transaction),
+                this._handleError.bind(this)
+            );
 
         },
 
         _checkUrl: function(url, current) {
-            if ((url + '').match(/^javascript:/)) {
+            return this._.ajaxAgent.checkUrl(url, current);
+
+        },
+
+        _checkLink: function (link) {
+            if (link.getAttribute('target')) {
                 return false;
             }
 
-            var u = url ? Url.from(url) : Url.fromCurrent(),
-                c = current ? Url.from(current) : Url.fromCurrent(),
-                d = u.compare(c);
+            return this._.options.whitelistLinks ? DOM.hasClass(link, 'nittro-ajax') : !DOM.hasClass(link, 'nittro-no-ajax');
 
-            return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
-
-        },
-
-        _checkRedirect: function (payload) {
-            return !this._.options.whitelistRedirects !== !payload.allowAjax && this._checkUrl(payload.redirect);
-
-        },
-
-        _tryRedirect: function (payload, pushState) {
-            if ('redirect' in payload) {
-                if (this._checkRedirect(payload)) {
-                    this._dispatchRequest(this._.ajax.createRequest(payload.redirect), null, pushState);
-
-                } else {
-                    document.location.href = payload.redirect;
-
-                }
-
-                return true;
-
-            }
-        },
-
-        _cleanup: function () {
-            this._.request = null;
-
-            if (this._.transitioning) {
-                this._.transitions.transitionIn(this._.transitioning);
-                this._.transitioning = null;
-
-            }
         },
 
         _showFlashes: function (flashes) {
@@ -407,6 +178,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             for (id in flashes) {
                 if (flashes.hasOwnProperty(id) && flashes[id]) {
                     for (i = 0; i < flashes[id].length; i++) {
+                        flashes[id][i].target = id;
                         this.trigger('flash', flashes[id][i]);
 
                     }
@@ -415,7 +187,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _showHtmlFlashes: function () {
-            var elms = DOM.getByClassName('flashes-src'),
+            var elms = DOM.getByClassName('nittro-flashes-src'),
                 i, n, data;
 
             for (i = 0, n = elms.length; i < n; i++) {
@@ -426,9 +198,18 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
         },
 
-        _handleError: function (evt) {
-            this._cleanup();
-            this.trigger('error', evt);
+        _handleSuccess: function(transaction) {
+            if (transaction.isHistoryState()) {
+                this._.currentUrl = transaction.getUrl();
+
+            }
+
+            this.trigger('update');
+
+        },
+
+        _handleError: function (err) {
+            this.trigger('error', err);
 
         },
 
@@ -446,8 +227,6 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
         }
     });
-
-    _context.mixin(Service, SnippetHelpers);
 
     _context.register(Service, 'Service');
 

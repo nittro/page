@@ -15,6 +15,12 @@ class DynamicSnippetsPresenter extends BasePresenter {
     /** @var array */
     private $entries = null;
 
+    public function actionRegenerate() {
+        $session = $this->getSession('dynamicDemo');
+        $session->entries = $this->createDemoEntries();
+        $this->redirect('default');
+
+    }
 
     public function handleAdd() {
         // somehow create a new entry and store it in the db

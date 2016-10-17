@@ -1,10 +1,10 @@
 _context.invoke('Nittro.Page', function (DOM, undefined) {
 
-    var Snippet = _context.extend(function (id, state) {
+    var Snippet = _context.extend(function (id, phase) {
         this._ = {
             id: id,
             container: false,
-            state: typeof state === 'number' ? state : Snippet.INACTIVE,
+            phase: typeof phase === 'number' ? phase : Snippet.INACTIVE,
             data: {},
             handlers: [
                 [], [], [], []
@@ -32,7 +32,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (prepare) {
-                if (this._.state === Snippet.PREPARE_SETUP) {
+                if (this._.phase === Snippet.PREPARE_SETUP) {
                     prepare(this.getElement());
 
                 } else {
@@ -42,7 +42,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (run) {
-                if (this._.state === Snippet.RUN_SETUP) {
+                if (this._.phase === Snippet.RUN_SETUP) {
                     run(this.getElement());
 
                 } else {
@@ -63,7 +63,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (prepare) {
-                if (this._.state === Snippet.PREPARE_TEARDOWN) {
+                if (this._.phase === Snippet.PREPARE_TEARDOWN) {
                     prepare(this.getElement());
 
                 } else {
@@ -73,7 +73,7 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
             }
 
             if (run) {
-                if (this._.state === Snippet.RUN_TEARDOWN) {
+                if (this._.phase === Snippet.RUN_TEARDOWN) {
                     run(this.getElement());
 
                 } else {
@@ -86,26 +86,26 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
 
         },
 
-        setState: function (state) {
-            if (state === Snippet.INACTIVE) {
-                this._.state = state;
+        runPhase: function (phase) {
+            if (phase === Snippet.INACTIVE) {
+                this._.phase = phase;
 
                 this._.handlers.forEach(function (queue) {
                     queue.splice(0, queue.length);
 
                 });
 
-            } else if (state - 1 === this._.state) {
-                this._.state = state;
+            } else if (phase - 1 === this._.phase) {
+                this._.phase = phase;
 
                 var elm = this.getElement();
 
-                this._.handlers[this._.state].forEach(function (handler) {
+                this._.handlers[this._.phase].forEach(function (handler) {
                     handler(elm);
 
                 });
 
-                this._.handlers[this._.state].splice(0, this._.handlers[this._.state].length);
+                this._.handlers[this._.phase].splice(0, this._.handlers[this._.phase].length);
 
             }
 
@@ -113,8 +113,8 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
 
         },
 
-        getState: function () {
-            return this._.state;
+        getPhase: function () {
+            return this._.phase;
 
         },
 
@@ -152,105 +152,27 @@ _context.invoke('Nittro.Page', function (DOM, undefined) {
     DOM: 'Utils.DOM'
 });
 ;
-_context.invoke('Nittro.Page', function (Snippet, DOM) {
+_context.invoke('Nittro.Page', function(DOM) {
 
-    var SnippetHelpers = {
-        _getTransitionTargets: function (elem) {
-            var sel = DOM.getData(elem, 'transition');
+    var Helpers = {
+        buildContent: function(elem, html) {
+            elem = elem.split(/\./g);
+            elem[0] = DOM.create(elem[0]);
 
-            if (sel === null && !DOM.getData(elem, 'dynamic-remove')) {
-                sel = this._.options.defaultTransition;
-
+            if (elem.length > 1) {
+                DOM.addClass.apply(DOM, elem);
             }
 
-            return sel ? DOM.find(sel) : [];
+            elem = elem[0];
+            DOM.html(elem, html);
+
+            return elem;
 
         },
 
-        _getRemoveTargets: function (elem) {
-            var sel = DOM.getData(elem, 'dynamic-remove');
-            return sel ? DOM.find(sel) : [];
-
-        },
-
-        _getDynamicContainerCache: function () {
-            if (this._.containerCache === null) {
-                this._.containerCache = DOM.getByClassName('nittro-snippet-container')
-                    .map(function (elem) {
-                        return elem.id;
-                    });
-            }
-
-            return this._.containerCache;
-
-        },
-
-        _clearDynamicContainerCache: function () {
-            this._.containerCache = null;
-
-        },
-
-        _getDynamicContainer: function (id) {
-            var cache = this._getDynamicContainerCache(),
-                i, n, container, data;
-
-            for (i = 0, n = cache.length; i < n; i++) {
-                container = this.getSnippet(cache[i]);
-
-                if (!container.isContainer()) {
-                    data = this._prepareDynamicContainer(container);
-
-                } else {
-                    data = container.getData('_container');
-
-                }
-
-                if (data.mask.test(id)) {
-                    return data;
-
-                }
-            }
-
-            throw new Error('Dynamic snippet #' + id + ' has no container');
-
-        },
-
-        _applySnippets: function (snippets, removeElms) {
-            var setup = {},
-                teardown = {},
-                dynamic = [],
-                containers = {};
-
-            this._clearDynamicContainerCache();
-
-            this._prepareStaticSnippets(snippets, setup, teardown, dynamic, removeElms);
-            this._prepareDynamicSnippets(dynamic, snippets, containers);
-            this._prepareRemoveTargets(removeElms, teardown);
-
-            this._teardown(teardown);
-
-            this._applyRemove(removeElms);
-            this._applyContainers(containers, teardown);
-            this._applySetup(setup, snippets);
-
-            this._setup();
-
-            return dynamic.map(function (snippet) {
-                if (!snippet.elem) {
-                    DOM.addClass(snippet.content, 'nittro-dynamic-add');
-                    return snippet.content;
-
-                } else {
-                    DOM.addClass(snippet.elem, 'nittro-dynamic-update');
-                    return snippet.elem;
-
-                }
-            });
-        },
-
-        _prepareDynamicContainer: function (snippet) {
+        prepareDynamicContainer: function (snippet) {
             var elem = snippet.getElement(),
-                data = {
+                params = {
                     id: snippet.getId(),
                     mask: new RegExp('^' + DOM.getData(elem, 'dynamic-mask') + '$'),
                     element: DOM.getData(elem, 'dynamic-element') || 'div',
@@ -259,253 +181,71 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
                 };
 
             snippet.setContainer();
-            snippet.setData('_container', data);
-            return data;
+            snippet.setData('_snippet_container', params);
+            return params;
 
         },
 
-        _prepareRemoveTargets: function (removeElms, teardown) {
-            for (var i = 0; i < removeElms.length; i++) {
-                this._prepareRemoveTarget(removeElms[i], teardown);
-
-            }
+        computeSortedSnippets: function (container, snippets, changeset) {
+            var sortData = Helpers._getSortData(container.getData('_snippet_container'), container.getElement(), changeset);
+            Helpers._mergeSortData(sortData, snippets);
+            return Helpers._applySortData(sortData);
         },
 
-        _prepareRemoveTarget: function (elem, teardown) {
-            this._cleanupChildSnippets(elem, teardown);
-            this._cleanupForms(elem);
-
-            if (this.isSnippet(elem)) {
-                teardown[elem.id] = true;
-
-            }
-        },
-
-        _prepareStaticSnippets: function (snippets, setup, teardown, dynamic, removeElms) {
-            for (var id in snippets) {
-                if (snippets.hasOwnProperty(id)) {
-                    this._prepareStaticSnippet(id, setup, teardown, dynamic, removeElms);
-
-                }
-            }
-        },
-
-        _prepareStaticSnippet: function (id, setup, teardown, dynamic, removeElms) {
-            if (this._.snippets[id] && this._.snippets[id].getState() === Snippet.RUN_SETUP) {
-                teardown[id] = false;
-
-            }
-
-            var snippet = DOM.getById(id),
-                dyn;
-
-            if (snippet) {
-                dyn = DOM.hasClass(snippet.parentNode, 'nittro-snippet-container');
-
-                if (!removeElms.length || removeElms.indexOf(snippet) === -1) {
-                    this._cleanupChildSnippets(snippet, teardown);
-                    this._cleanupForms(snippet);
-
-                    if (dyn) {
-                        dynamic.push({id: id, elem: snippet});
-
-                    } else {
-                        setup[id] = snippet;
-
-                    }
-                } else {
-                    dynamic.push({id: id});
-
-                }
-            } else {
-                dynamic.push({id: id});
-
-            }
-        },
-
-        _prepareDynamicSnippets: function (dynamic, snippets, containers) {
-            for (var i = 0; i < dynamic.length; i++) {
-                this._prepareDynamicSnippet(dynamic[i], snippets[dynamic[i].id], containers);
-
-            }
-        },
-
-        _prepareDynamicSnippet: function (snippet, content, containers) {
-            var container = this._getDynamicContainer(snippet.id);
-
-            snippet.content = this._createDynamic(container.element, snippet.id, content);
-
-            if (!containers[container.id]) {
-                containers[container.id] = [];
-
-            }
-
-            containers[container.id].push(snippet);
-
-        },
-
-        _createDynamic: function (elem, id, html) {
-            elem = elem.split(/\./g);
-            elem[0] = DOM.create(elem[0], { id: id });
-
-            if (elem.length > 1) {
-                DOM.addClass.apply(null, elem);
-
-            }
-
-            elem = elem[0];
-            DOM.html(elem, html);
-            return elem;
-
-        },
-
-        _applyRemove: function (removeElms) {
-            removeElms.forEach(function (elem) {
-                elem.parentNode.removeChild(elem);
-
-            });
-        },
-
-        _applySetup: function (snippets, data) {
-            for (var id in snippets) {
-                if (snippets.hasOwnProperty(id)) {
-                    DOM.html(snippets[id], data[id]);
-
-                }
-            }
-        },
-
-        _applyContainers: function (containers, teardown) {
-            for (var id in containers) {
-                if (containers.hasOwnProperty(id)) {
-                    this._applyDynamic(this.getSnippet(id), containers[id], teardown);
-
-                }
-            }
-        },
-
-        _applyDynamic: function (container, snippets, teardown) {
-            var containerData = container.getData('_container');
-
-            if (containerData.sort === 'append') {
-                this._appendDynamic(container.getElement(), snippets);
-
-            } else if (containerData.sort === 'prepend') {
-                this._prependDynamic(container.getElement(), snippets);
-
-            } else {
-                this._sortDynamic(containerData, container.getElement(), snippets, teardown);
-
-            }
-        },
-
-        _appendDynamic: function (elem, snippets) {
-            snippets.forEach(function (snippet) {
-                if (snippet.elem) {
-                    DOM.html(snippet.elem, snippet.content.innerHTML);
-
-                } else {
-                    elem.appendChild(snippet.content);
-
-                }
-            });
-        },
-
-        _prependDynamic: function (elem, snippets) {
-            var first = elem.firstChild;
-
-            snippets.forEach(function (snippet) {
-                if (snippet.elem) {
-                    DOM.html(snippet.elem, snippet.content.innerHTML);
-
-                } else {
-                    elem.insertBefore(snippet.content, first);
-
-                }
-            });
-        },
-
-        _sortDynamic: function (container, elem, snippets, teardown) {
-            var sortData = this._getSortData(container, elem, teardown);
-            this._mergeSortData(sortData, snippets.map(function(snippet) { return snippet.content; }));
-
-            var sorted = this._applySort(sortData);
-            snippets = this._getSnippetMap(snippets);
-
-            this._insertSorted(elem, sorted, snippets);
-
-        },
-
-        _insertSorted: function (container, sorted, snippets) {
-            var i = 0, n = sorted.length, tmp;
+        applySortedSnippets: function (container, ids, snippets) {
+            var i = 0, n = ids.length, tmp;
 
             tmp = container.firstElementChild;
 
-            while (i < n && sorted[i] in snippets && !snippets[sorted[i]].elem) {
-                container.insertBefore(snippets[sorted[i]].content, tmp);
+            while (i < n && ids[i] in snippets && !snippets[ids[i]].element) {
+                container.insertBefore(snippets[ids[i]].content, tmp);
                 i++;
 
             }
 
-            while (n > i && sorted[n - 1] in snippets && !snippets[sorted[n - 1]].elem) {
+            while (n > i && ids[n - 1] in snippets && !snippets[ids[n - 1]].element) {
                 n--;
 
             }
 
             for (; i < n; i++) {
-                if (sorted[i] in snippets) {
-                    if (snippets[sorted[i]].elem) {
-                        snippets[sorted[i]].elem.innerHTML = '';
-
-                        if (snippets[sorted[i]].elem.previousElementSibling !== (i > 0 ? DOM.getById(sorted[i - 1]) : null)) {
-                            container.insertBefore(snippets[sorted[i]].elem, i > 0 ? DOM.getById(sorted[i - 1]).nextElementSibling : container.firstElementChild);
-
-                        }
-
-                        while (tmp = snippets[sorted[i]].content.firstChild) {
-                            snippets[sorted[i]].elem.appendChild(tmp);
+                if (ids[i] in snippets) {
+                    if (snippets[ids[i]].element) {
+                        if (snippets[ids[i]].element.previousElementSibling !== (i > 0 ? DOM.getById(ids[i - 1]) : null)) {
+                            container.insertBefore(snippets[ids[i]].element, i > 0 ? DOM.getById(ids[i - 1]).nextElementSibling : container.firstElementChild);
 
                         }
                     } else {
-                        container.insertBefore(snippets[sorted[i]].content, DOM.getById(sorted[i - 1]).nextElementSibling);
+                        container.insertBefore(snippets[ids[i]].content, DOM.getById(ids[i - 1]).nextElementSibling);
 
                     }
                 }
             }
 
-            while (n < sorted.length) {
-                container.appendChild(snippets[sorted[n]].content);
+            while (n < ids.length) {
+                container.appendChild(snippets[ids[n]].content);
                 n++;
 
             }
         },
 
-        _getSnippetMap: function (snippets) {
-            var map = {};
-
-            snippets.forEach(function (snippet) {
-                map[snippet.id] = snippet;
-            });
-
-            return map;
-
-        },
-
-        _applySort: function (sortData) {
+        _applySortData: function (sortData) {
             var sorted = [],
                 id;
 
             for (id in sortData.snippets) {
-                sorted.push({ id: id, values: sortData.snippets[id] });
+                if (sortData.snippets.hasOwnProperty(id)) {
+                    sorted.push({id: id, values: sortData.snippets[id]});
 
+                }
             }
 
-            sorted.sort(this._compareDynamic.bind(this, sortData.descriptor));
+            sorted.sort(Helpers._compareSnippets.bind(null, sortData.descriptor));
             return sorted.map(function(snippet) { return snippet.id; });
 
         },
 
-        _compareDynamic: function (descriptor, a, b) {
+        _compareSnippets: function (descriptor, a, b) {
             var i, n, v;
 
             for (i = 0, n = descriptor.length; i < n; i++) {
@@ -521,19 +261,19 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
 
         },
 
-        _getSortData: function (container, elem, teardown) {
-            var sortData = container.sortCache;
+        _getSortData: function (params, elem, changeset) {
+            var sortData = params.sortCache;
 
             if (!sortData) {
-                sortData = this._buildSortData(container, elem, teardown);
+                sortData = Helpers._buildSortData(params, elem, changeset);
 
-                if (container.sortCache !== false) {
-                    container.sortCache = sortData;
+                if (params.sortCache !== false) {
+                    params.sortCache = sortData;
 
                 }
             } else {
                 for (var id in sortData.snippets) {
-                    if (id in teardown && teardown[id]) {
+                    if (sortData.snippets.hasOwnProperty(id) && (id in changeset.remove || !DOM.getById(id))) {
                         delete sortData.snippets[id];
 
                     }
@@ -544,32 +284,40 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
 
         },
 
-        _buildSortData: function (container, elem, teardown) {
+        _buildSortData: function (params, elem, changeset) {
             var sortData = {
-                descriptor: container.sort.trim().split(/\s*,\s*/g).map(this._parseDescriptor.bind(this, container.id)),
+                descriptor: params.sort.trim().split(/\s*,\s*/g).map(Helpers._parseDescriptor.bind(null, params.id)),
                 snippets: {}
             };
 
-            this._mergeSortData(sortData, DOM.getChildren(elem), teardown);
+            var children = {};
+
+            DOM.getChildren(elem).forEach(function(child) {
+                if (!(child.id in changeset.remove || child.id in changeset.update)) {
+                    children[child.id] = {
+                        content: child
+                    };
+                }
+            });
+
+            Helpers._mergeSortData(sortData, children);
 
             return sortData;
 
         },
 
-        _mergeSortData: function (sortData, snippets, teardown) {
-            snippets.forEach(function (snippet) {
-                var id = snippet.id;
-
-                if (!teardown || !(id in teardown) || !teardown[id]) {
-                    sortData.snippets[id] = this._extractSortData(snippet, sortData.descriptor);
+        _mergeSortData: function (sortData, snippets) {
+            for (var id in snippets) {
+                if (snippets.hasOwnProperty(id)) {
+                    sortData.snippets[id] = Helpers._extractSortData(snippets[id].content, sortData.descriptor);
 
                 }
-            }.bind(this));
+            }
         },
 
-        _extractSortData: function (snippet, descriptor) {
+        _extractSortData: function (elem, descriptor) {
             return descriptor.map(function (field) {
-                return field.extractor(snippet);
+                return field.extractor(elem);
 
             });
         },
@@ -597,13 +345,13 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
             asc = asc ? /^[1tay]/i.test(asc) : true;
 
             if (attr) {
-                return {extractor: this._getAttrExtractor(sel, attr), asc: asc};
+                return {extractor: Helpers._getAttrExtractor(sel, attr), asc: asc};
 
             } else if (prop) {
-                return {extractor: this._getDataExtractor(sel, prop), asc: asc};
+                return {extractor: Helpers._getDataExtractor(sel, prop), asc: asc};
 
             } else {
-                return {extractor: this._getTextExtractor(sel), asc: asc};
+                return {extractor: Helpers._getTextExtractor(sel), asc: asc};
 
             }
         },
@@ -618,7 +366,7 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
         _getDataExtractor: function (sel, prop) {
             return function (elem) {
                 elem = elem.getElementsByClassName(sel);
-                return elem.length ? DOM.getData(elem[0], prop) : null;
+                return elem.length ? DOM.getData(elem[0], prop, null) : null;
             };
         },
 
@@ -627,89 +375,532 @@ _context.invoke('Nittro.Page', function (Snippet, DOM) {
                 elem = elem.getElementsByClassName(sel);
                 return elem.length ? elem[0].textContent : null;
             };
-        },
-
-        _teardown: function (snippets) {
-            this._setSnippetsState(snippets, Snippet.PREPARE_TEARDOWN);
-            this._setSnippetsState(snippets, Snippet.RUN_TEARDOWN);
-            this._setSnippetsState(snippets, Snippet.INACTIVE);
-
-            this.trigger('teardown');
-
-            for (var id in snippets) {
-                if (snippets.hasOwnProperty(id) && snippets[id]) {
-                    delete this._.snippets[id];
-
-                }
-            }
-        },
-
-        _setup: function () {
-            this.trigger('setup');
-
-            this._setSnippetsState(this._.snippets, Snippet.PREPARE_SETUP);
-            this._setSnippetsState(this._.snippets, Snippet.RUN_SETUP);
-
-        },
-
-        _setSnippetsState: function (snippets, state) {
-            this._.currentPhase = state;
-
-            for (var id in snippets) {
-                if (snippets.hasOwnProperty(id)) {
-                    this.getSnippet(id).setState(state);
-
-                }
-            }
-        },
-
-        _cleanupChildSnippets: function (elem, teardown) {
-            for (var i in this._.snippets) {
-                if (this._.snippets.hasOwnProperty(i) && this._.snippets[i].getState() === Snippet.RUN_SETUP && this._.snippets[i].getElement() !== elem && DOM.contains(elem, this._.snippets[i].getElement())) {
-                    teardown[i] = true;
-
-                }
-            }
-        },
-
-        _cleanupForms: function (snippet) {
-            if (!this._.formLocator) {
-                return;
-
-            }
-
-            if (snippet.tagName.toLowerCase() === 'form') {
-                this._.formLocator.removeForm(snippet);
-
-            } else {
-                var forms = snippet.getElementsByTagName('form'),
-                    i;
-
-                for (i = 0; i < forms.length; i++) {
-                    this._.formLocator.removeForm(forms.item(i));
-
-                }
-            }
         }
     };
 
-    _context.register(SnippetHelpers, 'SnippetHelpers');
+    _context.register(Helpers, 'SnippetManagerHelpers');
 
 }, {
     DOM: 'Utils.DOM'
 });
 ;
-_context.invoke('Nittro.Page', function (DOM, Arrays) {
+_context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefined) {
 
-    var Transitions = _context.extend(function(duration) {
+    var SnippetManager = _context.extend('Nittro.Object', function() {
+        SnippetManager.Super.call(this);
+
+        this._.snippets = {};
+        this._.containerCache = null;
+        this._.currentPhase = Snippet.INACTIVE;
+
+    }, {
+        getSnippet: function (id) {
+            if (!this._.snippets[id]) {
+                this._.snippets[id] = new Snippet(id, this._.currentPhase);
+
+            }
+
+            return this._.snippets[id];
+
+        },
+
+        isSnippet: function (elem) {
+            return (typeof elem === 'string' ? elem : elem.id) in this._.snippets;
+
+        },
+
+        setup: function() {
+            this._runSnippetsPhase(this._.snippets, Snippet.PREPARE_SETUP);
+            this._runSnippetsPhase(this._.snippets, Snippet.RUN_SETUP);
+        },
+
+        getRemoveTargets: function (elem) {
+            var sel = DOM.getData(elem, 'dynamic-remove');
+            return sel ? DOM.find(sel) : [];
+
+        },
+
+        computeChanges: function (snippets, removeTargets) {
+            this._clearDynamicContainerCache();
+
+            var changeset = {
+                remove: {},
+                update: {},
+                add: {},
+                containers: {}
+            };
+
+            this._resolveRemovals(removeTargets, changeset);
+            this._resolveUpdates(snippets, changeset);
+            this._resolveDynamicSnippets(changeset);
+
+            return changeset;
+
+        },
+
+        applyChanges: function (changeset) {
+            var teardown = Arrays.mergeTree({}, changeset.remove, changeset.update),
+                setup = Arrays.mergeTree({}, changeset.update, changeset.add);
+
+            this._runSnippetsPhase(teardown, Snippet.PREPARE_TEARDOWN);
+            this._runSnippetsPhase(teardown, Snippet.RUN_TEARDOWN);
+            this._runSnippetsPhase(teardown, Snippet.INACTIVE);
+
+            this.trigger('before-update', changeset);
+
+            this._applyRemove(changeset.remove);
+            this._applyUpdate(changeset.update);
+            this._applyAdd(changeset.add, changeset.containers);
+            this._applyDynamic(changeset.containers, setup);
+
+            return this._runSnippetsPhaseOnNextFrame(setup, Snippet.PREPARE_SETUP)
+                .then(function () {
+                    this._runSnippetsPhase(setup, Snippet.RUN_SETUP);
+
+                }.bind(this));
+        },
+
+        _resolveRemovals: function(removeTargets, changeset) {
+            removeTargets.forEach(function(elem) {
+                changeset.remove[elem.id] = {
+                    element: elem
+                };
+
+                this._cleanupSnippet(elem, changeset);
+
+            }.bind(this));
+        },
+
+        _resolveUpdates: function(snippets, changeset) {
+            var id, elem;
+
+            for (id in snippets) {
+                if (snippets.hasOwnProperty(id)) {
+                    elem = DOM.getById(id);
+
+                    if (elem) {
+                        this._cleanupSnippet(elem, changeset);
+
+                        if (id in changeset.remove) {
+                            changeset.add[id] = this._resolveAddition(id, snippets[id]);
+
+                        } else {
+                            changeset.update[id] = this._resolveUpdate(elem, snippets[id]);
+
+                        }
+                    } else {
+                        changeset.add[id] = this._resolveAddition(id, snippets[id]);
+
+                    }
+                }
+            }
+        },
+
+        _resolveDynamicSnippets: function(changeset) {
+            var id, type, cid, params;
+
+            for (type in {update: 1, add: 1}) {
+                for (id in changeset[type]) {
+                    if (changeset[type].hasOwnProperty(id) && (cid = changeset[type][id].container)) {
+                        params = this._getDynamicContainerParams(cid);
+
+                        if (params.sort !== 'prepend' && params.sort !== 'append') {
+                            changeset.containers[cid] || (changeset.containers[cid] = {});
+                            changeset.containers[cid][id] = changeset[type][id];
+
+                        } else {
+                            changeset[type][id].action = params.sort;
+
+                        }
+                    }
+                }
+            }
+
+            for (cid in changeset.containers) {
+                if (changeset.containers.hasOwnProperty(cid)) {
+                    changeset.containers[cid] = Helpers.computeSortedSnippets(this.getSnippet(cid), changeset.containers[cid], changeset);
+
+                }
+            }
+        },
+
+        _resolveUpdate: function(elem, content) {
+            return {
+                element: elem,
+                content: Helpers.buildContent(elem.tagName, content),
+                container: DOM.hasClass(elem.parentNode, 'nittro-snippet-container') ? elem.parentNode.id : null
+            };
+        },
+
+        _resolveAddition: function(id, content) {
+            var params = this._getDynamicContainerParamsForId(id),
+                elem = Helpers.buildContent(params.element, content);
+
+            elem.id = id;
+
+            return {
+                content: elem,
+                container: params.id
+            };
+        },
+
+        _cleanupSnippet: function(elem, changeset) {
+            var id, snippet;
+
+            for (id in this._.snippets) {
+                if (this._.snippets.hasOwnProperty(id) && !(id in changeset.remove)) {
+                    snippet = this._.snippets[id].getElement();
+
+                    if (snippet !== elem && DOM.contains(elem, snippet)) {
+                        changeset.remove[id] = {
+                            element: snippet,
+                            isDescendant: true
+                        };
+                    }
+                }
+            }
+        },
+
+        _runSnippetsPhase: function (snippets, phase) {
+            this._.currentPhase = phase;
+
+            for (var id in snippets) {
+                if (snippets.hasOwnProperty(id)) {
+                    this.getSnippet(id).runPhase(phase);
+
+                }
+            }
+        },
+
+        _runSnippetsPhaseOnNextFrame: function(snippets, phase) {
+            return new Promise(function(fulfill) {
+                window.requestAnimationFrame(function() {
+                    this._runSnippetsPhase(snippets, phase);
+                    fulfill();
+
+                }.bind(this));
+            }.bind(this));
+        },
+
+        _applyRemove: function(snippets) {
+            for (var id in snippets) {
+                if (snippets.hasOwnProperty(id)) {
+                    if (!snippets[id].isDescendant) {
+                        snippets[id].element.parentNode.removeChild(snippets[id].element);
+
+                    }
+
+                    if (id in this._.snippets) {
+                        delete this._.snippets[id];
+
+                    }
+                }
+            }
+        },
+
+        _applyUpdate: function(snippets) {
+            for (var id in snippets) {
+                if (snippets.hasOwnProperty(id)) {
+                    DOM.empty(snippets[id].element);
+                    DOM.append(snippets[id].element, Arrays.createFrom(snippets[id].content.childNodes));
+
+                }
+            }
+        },
+
+        _applyAdd: function(snippets, containers) {
+            for (var id in snippets) {
+                if (snippets.hasOwnProperty(id) && !(snippets[id].container in containers)) {
+                    if (snippets[id].action === 'prepend') {
+                        DOM.prepend(snippets[id].container, snippets[id].content);
+
+                    } else {
+                        DOM.append(snippets[id].container, snippets[id].content);
+
+                    }
+                }
+            }
+        },
+
+        _applyDynamic: function(containers, snippets) {
+            for (var cid in containers) {
+                if (containers.hasOwnProperty(cid)) {
+                    Helpers.applySortedSnippets(this.getSnippet(cid).getElement(), containers[cid], snippets);
+
+                }
+            }
+        },
+
+        _getDynamicContainerCache: function () {
+            if (this._.containerCache === null) {
+                this._.containerCache = DOM.getByClassName('nittro-snippet-container')
+                    .map(function (elem) {
+                        return elem.id;
+                    });
+            }
+
+            return this._.containerCache;
+
+        },
+
+        _clearDynamicContainerCache: function () {
+            this._.containerCache = null;
+
+        },
+
+        _getDynamicContainerParams: function (id) {
+            var container = this.getSnippet(id);
+
+            if (!container.isContainer()) {
+                return Helpers.prepareDynamicContainer(container);
+
+            } else {
+                return container.getData('_snippet_container');
+
+            }
+        },
+
+        _getDynamicContainerParamsForId: function (id) {
+            var cache = this._getDynamicContainerCache(),
+                i, n, params;
+
+            for (i = 0, n = cache.length; i < n; i++) {
+                params = this._getDynamicContainerParams(cache[i]);
+
+                if (params.mask.test(id)) {
+                    return params;
+
+                }
+            }
+
+            throw new Error('Dynamic snippet #' + id + ' has no container');
+
+        }
+    });
+
+    _context.register(SnippetManager, 'SnippetManager');
+
+}, {
+    Helpers: 'Nittro.Page.SnippetManagerHelpers',
+    DOM: 'Utils.DOM',
+    Arrays: 'Utils.Arrays'
+});
+;
+_context.invoke('Nittro.Page', function() {
+
+    var SnippetAgent = _context.extend(function(snippetManager) {
         this._ = {
-            duration: duration || false,
-            ready: true,
-            queue: [],
-            support: false
+            snippetManager: snippetManager
+        };
+    }, {
+        init: function(transaction, context) {
+            return {
+                removeTargets: context.element ? this._.snippetManager.getRemoveTargets(context.element) : []
+            };
+        },
+
+        dispatch: function(transaction, data) {
+
+        },
+
+        abort: function(transaction, data) {
+            // clean up remove targets
+        },
+
+        handleAction: function(transaction, agent, action, actionData, data) {
+            if (agent === 'ajax' && action === 'response') {
+                var payload = actionData.getPayload(),
+                    changeset;
+
+                if (payload.snippets || data.removeTargets.length) {
+                    changeset = this._.snippetManager.computeChanges(payload.snippets || {}, data.removeTargets);
+
+                    return transaction.dispatchAgentAction('snippets', 'apply-changes', changeset)
+                        .then(function() {
+                            this._.snippetManager.applyChanges(changeset);
+                        }.bind(this));
+                }
+            }
+        }
+    });
+
+    _context.register(SnippetAgent, 'SnippetAgent');
+
+});
+;
+_context.invoke('Nittro.Page', function(Arrays, Url) {
+
+    var AjaxAgent = _context.extend(function(ajax, options) {
+        this._ = {
+            ajax: ajax,
+            options: Arrays.mergeTree({}, AjaxAgent.defaults, options)
         };
 
-        try {
+        if (!this._.options.allowOrigins) {
+            this._.options.allowOrigins = [];
+        } else if (!Array.isArray(this._.options.allowOrigins)) {
+            this._.options.allowOrigins = this._.options.allowOrigins.split(/\s*,\s*/g);
+        }
+
+        this._.options.allowOrigins.push(Url.fromCurrent().getOrigin());
+
+    }, {
+        STATIC: {
+            defaults: {
+                whitelistRedirects: false,
+                allowOrigins: null
+            }
+        },
+
+        checkUrl: function(url, current) {
+            if ((url + '').match(/^javascript:/)) {
+                return false;
+            }
+
+            var u = url ? Url.from(url) : Url.fromCurrent(),
+                c, d;
+
+            if (this._.options.allowOrigins.indexOf(u.getOrigin()) === -1) {
+                return false;
+            }
+
+            c = current ? Url.from(current) : Url.fromCurrent();
+            d = u.compare(c);
+
+            return d === 0 || d > Url.PART.HASH;
+
+        },
+
+        init: function(transaction, context) {
+            return {
+                request: this._.ajax.createRequest(transaction.getUrl(), context.method, context.data)
+            };
+        },
+
+        dispatch: function(transaction, data) {
+            return this._.ajax.dispatch(data.request)
+                .then(this._handleResponse.bind(this, transaction, data));
+
+        },
+
+        abort: function(transaction, data) {
+            data.request.abort();
+        },
+
+        handleAction: function(transaction, agent, action, actionData, data) {
+            // may return promise
+        },
+
+        _handleResponse: function(transaction, data, response) {
+            return transaction.dispatchAgentAction('ajax', 'response', response)
+                .then(function() {
+                    var payload = response.getPayload();
+
+                    if (payload.postGet) {
+                        transaction.setUrl(payload.url);
+                    }
+
+                    if ('redirect' in payload) {
+                        if ((!this._.options.whitelistRedirects ? payload.allowAjax !== false : payload.allowAjax) && this.checkUrl(payload.redirect)) {
+                            transaction.setUrl(payload.redirect);
+                            data.request = this._.ajax.createRequest(payload.redirect);
+                            return this.dispatch(transaction, data);
+
+                        } else {
+                            document.location.href = payload.redirect;
+
+                        }
+                    } else {
+                        return data.request;
+
+                    }
+                }.bind(this));
+        }
+    });
+
+    _context.register(AjaxAgent, 'AjaxAgent');
+
+}, {
+    Arrays: 'Utils.Arrays',
+    Url: 'Utils.Url'
+});
+;
+_context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
+
+    var HistoryAgent = _context.extend(function(options) {
+        this._ = {
+            options: Arrays.mergeTree({}, HistoryAgent.defaults, options)
+        };
+    }, {
+        STATIC: {
+            defaults: {
+                whitelistHistory: false
+            }
+        },
+
+        init: function (transaction, context) {
+            if ('history' in context) {
+                transaction.setIsHistoryState(context.history);
+
+            } else if (context.element) {
+                transaction.setIsHistoryState(this._.options.whitelistHistory ? DOM.hasClass(context.element, 'nittro-history') : !DOM.hasClass(context.element, 'nittro-no-history'));
+
+            } else {
+                transaction.setIsHistoryState(!this._.options.whitelistHistory);
+
+            }
+
+            return {
+                title: document.title
+            };
+        },
+
+        dispatch: function (transaction, data) {
+            transaction.then(this._saveState.bind(this, transaction, data));
+        },
+
+        abort: function (transaction, data) {
+
+        },
+
+        handleAction: function (transaction, agent, action, actionData, data) {
+            if (agent === 'ajax' && action === 'response') {
+                var payload = actionData.getPayload();
+
+                if (payload.title) {
+                    data.title = payload.title;
+                }
+            }
+        },
+
+        _saveState: function (transaction, data) {
+            if (transaction.getUrl().getOrigin() !== Url.fromCurrent().getOrigin()) {
+                transaction.setIsHistoryState(false);
+
+            } else if (transaction.isHistoryState()) {
+                window.history.pushState({_nittro: true}, data.title, transaction.getUrl().toAbsolute());
+                document.title = data.title;
+
+            }
+        }
+    });
+
+    _context.register(HistoryAgent, 'HistoryAgent');
+
+}, {
+    Arrays: 'Utils.Arrays',
+    DOM: 'Utils.DOM',
+    Url: 'Utils.Url'
+});
+;
+_context.invoke('Nittro.Page', function (DOM) {
+
+    var TransitionHelper = _context.extend(function() {
+        this._ = {
+            support: !!window.getComputedStyle
+        };
+
+        if (this._.support) try {
             var s = DOM.create('span').style;
 
             this._.support = [
@@ -727,83 +918,38 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
         } catch (e) { }
 
     }, {
-        transitionOut: function (elements) {
-            return this._begin(elements, 'nittro-transition-out');
-
-        },
-
-        transitionIn: function (elements) {
-            return this._begin(elements, 'nittro-transition-in');
-
-        },
-
-        _begin: function (elements, className) {
-            if (!this._.support || !this._.duration || !elements.length) {
+        transition: function(elements, classes, forceLayout) {
+            if (!this._.support || !elements.length) {
                 return Promise.resolve(elements);
 
             } else {
-                return this._resolve(elements, className);
+                return this._resolve(elements, classes, forceLayout);
 
             }
         },
 
-        _resolve: function (elements, className) {
-            if (!this._.ready) {
-                return new Promise(function (fulfill) {
-                    this._.queue.push([elements, className, fulfill]);
-
-                }.bind(this));
-            }
-
-            this._.ready = false;
-
-            if (className === 'nittro-transition-in') {
+        _resolve: function (elements, classes, forceLayout) {
+            if (forceLayout) {
                 var foo = window.pageXOffset; // needed to force layout and thus run asynchronously
 
             }
 
-            DOM.addClass(elements, 'nittro-transition-active ' + className);
-            DOM.removeClass(elements, 'nittro-transition-middle');
+            classes.add && DOM.addClass(elements, classes.add);
+            classes.remove && DOM.removeClass(elements, classes.remove);
 
             var duration = this._getDuration(elements);
 
-            var promise = new Promise(function (fulfill) {
+            return new Promise(function (fulfill) {
                 window.setTimeout(function () {
-                    DOM.removeClass(elements, 'nittro-transition-active ' + className);
-
-                    if (className === 'nittro-transition-out') {
-                        DOM.addClass(elements, 'nittro-transition-middle');
-
-                    }
-
-                    this._.ready = true;
-
+                    classes.add && DOM.removeClass(elements, classes.add);
+                    classes.after && DOM.addClass(elements, classes.after);
                     fulfill(elements);
 
                 }.bind(this), duration);
             }.bind(this));
-
-            promise.then(function () {
-                if (this._.queue.length) {
-                    var q = this._.queue.shift();
-
-                    this._resolve(q[0], q[1]).then(function () {
-                        q[2](q[0]);
-
-                    });
-                }
-            }.bind(this));
-
-            return promise;
-
         },
 
         _getDuration: function (elements) {
-            if (!window.getComputedStyle) {
-                return this._.duration;
-
-            }
-
             var durations = DOM.getStyle(elements, 'animationDuration')
                 .concat(DOM.getStyle(elements, 'transitionDuration'))
                 .map(function(d) {
@@ -818,42 +964,289 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
                     }));
                 });
 
-            if (durations.length) {
-                return Math.max.apply(null, durations);
+            return durations.length ? Math.max.apply(null, durations) : 0;
 
-            } else {
-                return this._.duration;
-
-            }
         }
     });
 
-    _context.register(Transitions, 'Transitions');
+    _context.register(TransitionHelper, 'TransitionHelper');
+
+}, {
+    DOM: 'Utils.DOM'
+});
+;
+_context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
+
+    var TransitionAgent = _context.extend('Nittro.Object', function(transitionHelper, options) {
+        TransitionAgent.Super.call(this);
+
+        this._.transitionHelper = transitionHelper;
+        this._.ready = true;
+        this._.queue = [];
+        this._.options = Arrays.mergeTree({}, TransitionAgent.defaults, options);
+
+    }, {
+        STATIC: {
+            defaults: {
+                defaultSelector: '.nittro-transition-auto'
+            }
+        },
+
+        init: function(transaction, context) {
+            return {
+                elements: this._getTransitionTargets(context.element),
+                removeTargets: context.element ? this._getRemoveTargets(context.element) : []
+            };
+        },
+
+        dispatch: function(transaction, data) {
+            transaction.then(this._transitionIn.bind(this, data, false), this._transitionIn.bind(this, data, true));
+
+            if (data.elements.length || data.removeTargets.length) {
+                return data.transitionOut = this._transitionOut(data);
+
+            }
+        },
+
+        abort: function(transaction, data) {
+            if (data.elements.length || data.removeTargets.length) {
+                this._transitionIn(data, true);
+
+            }
+        },
+
+        handleAction: function(transaction, agent, action, actionData, data) {
+            if (agent === 'snippets' && action === 'apply-changes') {
+                for (var id in actionData.add) {
+                    if (actionData.add.hasOwnProperty(id)) {
+                        DOM.addClass(actionData.add[id].content, 'nittro-dynamic-add', 'nittro-transition-middle');
+                        data.elements.push(actionData.add[id].content);
+
+                    }
+                }
+
+                return data.transitionOut;
+
+            }
+        },
+
+        _transitionOut: function (data) {
+            return this._enqueue(data.elements.concat(data.removeTargets), 'out');
+
+        },
+
+        _transitionIn: function (data, aborting) {
+            var elements = aborting ? data.elements.concat(data.removeTargets) : data.elements;
+
+            if (elements.length) {
+                return this._enqueue(elements, 'in')
+                    .then(function () {
+                        DOM.removeClass(elements, 'nittro-dynamic-add', 'nittro-dynamic-remove');
+                    });
+
+            }
+        },
+
+        _enqueue: function (elements, dir) {
+            if (!this._.ready) {
+                return new Promise(function (fulfill) {
+                    this._.queue.push([elements, dir, fulfill]);
+
+                }.bind(this));
+            }
+
+            this._.ready = false;
+            return this._transition(elements, dir);
+
+        },
+
+        _transition: function(elements, dir) {
+            return this._.transitionHelper.transition(elements, {
+                    add: 'nittro-transition-active nittro-transition-' + dir,
+                    remove: 'nittro-transition-middle',
+                    after: dir === 'out' ? 'nittro-transition-middle' : null
+                }, dir === 'in')
+                .then(function () {
+                    if (this._.queue.length) {
+                        var q = this._.queue.shift();
+
+                        this._transition(q[0], q[1]).then(function () {
+                            q[2](q[0]);
+
+                        });
+                    } else {
+                        this._.ready = true;
+
+                    }
+                }.bind(this));
+        },
+
+        _getTransitionTargets: function(elem) {
+            var sel = elem ? DOM.getData(elem, 'transition') : undefined,
+                targets;
+
+            if (sel === undefined && (!elem || !DOM.getData(elem, 'dynamic-remove'))) {
+                sel = this._.options.defaultSelector;
+
+            }
+
+            targets = sel ? DOM.find(sel) : [];
+
+            this.trigger('prepare-targets', {
+                element: elem,
+                targets: targets
+            });
+
+            return targets;
+
+        },
+
+        _getRemoveTargets: function (elem) {
+            var sel = DOM.getData(elem, 'dynamic-remove');
+            return sel ? DOM.find(sel) : [];
+
+        }
+    });
+
+    _context.register(TransitionAgent, 'TransitionAgent');
 
 }, {
     DOM: 'Utils.DOM',
     Arrays: 'Utils.Arrays'
 });
 ;
-_context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snippet) {
+_context.invoke('Nittro.Page', function(Url, undefined) {
 
-    var Service = _context.extend('Nittro.Object', function (ajax, transitions, options) {
+    var Transaction = _context.extend('Nittro.Object', function (url) {
+        Transaction.Super.call(this);
+
+        this._.url = Url.from(url);
+        this._.history = true;
+        this._.agents = {};
+        this._.data = {};
+
+        this._.promise = new Promise(function(fulfill, reject) {
+            this._.fulfill = fulfill;
+            this._.reject = reject;
+        }.bind(this));
+
+    }, {
+        add: function(name, agent) {
+            this._.agents[name] = agent;
+            return this;
+        },
+
+        getUrl: function() {
+            return this._.url;
+        },
+
+        setUrl: function(url) {
+            this._.url = Url.from(url);
+            return this;
+        },
+
+        isHistoryState: function() {
+            return this._.history;
+        },
+
+        setIsHistoryState: function(value) {
+            this._.history = value;
+            return this;
+        },
+
+        init: function (context) {
+            for (var name in this._.agents) {
+                if (this._.agents.hasOwnProperty(name)) {
+                    this._.data[name] = this._.agents[name].init(this, context);
+                }
+            }
+
+            return this;
+
+        },
+
+        dispatch: function() {
+            var name, result, queue = [];
+
+            for (name in this._.agents) {
+                if (this._.agents.hasOwnProperty(name)) {
+                    result = this._.agents[name].dispatch(this, this._.data[name]);
+
+                    if (result) {
+                        queue.push(result);
+                    }
+                }
+            }
+
+            if (queue.length) {
+                Promise.all(queue).then(this._.fulfill.bind(this), this._.reject.bind(this));
+
+            } else {
+                this._.reject();
+
+            }
+
+            return this;
+
+        },
+
+        abort: function() {
+            for (var name in this._.agents) {
+                if (this._.agents.hasOwnProperty(name)) {
+                    this._.agents[name].abort(this, this._.data[name]);
+                }
+            }
+
+            this._.reject();
+
+            return this;
+
+        },
+
+        then: function(onfulfilled, onrejected) {
+            return this._.promise.then(onfulfilled, onrejected);
+        },
+
+        dispatchAgentAction: function(agent, action, data) {
+            var name, result, queue = [];
+
+            for (name in this._.agents) {
+                if (name !== agent && this._.agents.hasOwnProperty(name)) {
+                    result = this._.agents[name].handleAction(this, agent, action, data, this._.data[name]);
+
+                    if (result) {
+                        queue.push(result);
+                    }
+                }
+            }
+
+            return queue.length ? Promise.all(queue) : Promise.resolve();
+
+        }
+    });
+
+    _context.register(Transaction, 'Transaction');
+
+}, {
+    Url: 'Utils.Url'
+});
+;
+_context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
+
+    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, options) {
         Service.Super.call(this);
 
-        this._.ajax = ajax;
-        this._.transitions = transitions;
-        this._.request = null;
-        this._.snippets = {};
-        this._.containerCache = null;
-        this._.currentPhase = Snippet.INACTIVE;
-        this._.transitioning = null;
-        this._.setup = false;
-        this._.currentUrl = Url.fromCurrent();
+        this._.ajaxAgent = ajaxAgent;
+        this._.snippetAgent = snippetAgent;
+        this._.historyAgent = historyAgent;
+        this._.snippetManager = snippetManager;
         this._.options = Arrays.mergeTree({}, Service.defaults, options);
+        this._.setup = false;
+        this._.currentTransaction = null;
+        this._.currentUrl = Url.fromCurrent();
 
-        DOM.addListener(document, 'click', this._handleClick.bind(this));
-        DOM.addListener(document, 'submit', this._handleSubmit.bind(this));
         DOM.addListener(window, 'popstate', this._handleState.bind(this));
+        DOM.addListener(document, 'click', this._handleLinkClick.bind(this));
         this.on('error:default', this._showError.bind(this));
 
         this._checkReady();
@@ -861,92 +1254,47 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
     }, {
         STATIC: {
             defaults: {
-                whitelistRedirects: false,
-                whitelistLinks: true,
-                whitelistForms: true,
-                defaultTransition: null
+                whitelistLinks: false
             }
         },
 
-        setFormLocator: function (formLocator) {
-            this._.formLocator = formLocator;
-            return this;
+        open: function (url, method, data, context) {
+            try {
+                context || (context = {});
+                context.method = method;
+                context.data = data;
 
-        },
+                var transaction = this._createTransaction(url),
+                    promise;
 
-        open: function (url, method, data) {
-            return this._createRequest(url, method, data);
+                transaction.init(context);
 
+                promise = this._dispatchTransaction(transaction);
+
+                context.event && context.event.preventDefault();
+
+                return promise;
+
+            } catch (e) {
+                return Promise.reject(e);
+
+            }
         },
 
         openLink: function (link, evt) {
-            return this._createRequest(link.href, 'get', null, evt, link);
-
-        },
-
-        sendForm: function (form, evt) {
-            this._checkFormLocator(true);
-
-            var frm = this._.formLocator.getForm(form),
-                data = frm.serialize();
-
-            return this._createRequest(form.action, form.method, data, evt, form)
-                .then(function () {
-                    frm.reset();
-
-                });
+            return this.open(link.href, 'get', null, {
+                event: evt,
+                element: link
+            });
         },
 
         getSnippet: function (id) {
-            if (!this._.snippets[id]) {
-                this._.snippets[id] = new Snippet(id, this._.currentPhase);
-
-            }
-
-            return this._.snippets[id];
+            return this._.snippetManager.getSnippet(id);
 
         },
 
         isSnippet: function (elem) {
-            return (typeof elem === 'string' ? elem : elem.id) in this._.snippets;
-
-        },
-
-        saveHistoryState: function(url, title, replace) {
-            if (!title) {
-                title = document.title;
-            } else {
-                document.title = title;
-            }
-
-            if (url) {
-                url = Url.from(url);
-            } else {
-                url = Url.fromCurrent();
-            }
-
-            this._.currentUrl = url;
-
-            if (replace) {
-                window.history.replaceState({ _nittro: true }, title, url.toAbsolute());
-            } else {
-                window.history.pushState({ _nittro: true }, title, url.toAbsolute());
-            }
-
-            return this;
-
-        },
-
-        _checkFormLocator: function (need) {
-            if (this._.formLocator) {
-                return true;
-
-            } else if (!need) {
-                return false;
-
-            }
-
-            throw new Error("Nittro/Page service: Form support wasn't enabled. Please install Nittro/Application and inject the FormLocator service using the setFormLocator() method.");
+            return this._.snippetManager.isSnippet(elem);
 
         },
 
@@ -955,40 +1303,21 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 return;
             }
 
-            var url, request;
-
             if (!this._checkUrl(null, this._.currentUrl)) {
                 return;
 
             }
 
-            url = Url.fromCurrent();
+            var url = Url.fromCurrent();
             this._.currentUrl = url;
-            request = this._.ajax.createRequest(url);
 
             try {
-                this._dispatchRequest(request);
+                this.open(url, 'get', null, {history: false});
 
             } catch (e) {
                 document.location.href = url.toAbsolute();
 
             }
-        },
-
-        _pushState: function (payload, url) {
-            if (payload.postGet) {
-                url = payload.url;
-
-            }
-
-            if (payload.title) {
-                document.title = payload.title;
-
-            }
-
-            this._.currentUrl = Url.from(url);
-            this.saveHistoryState(this._.currentUrl);
-
         },
 
         _checkReady: function () {
@@ -1002,8 +1331,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
                 this._.setup = true;
 
                 window.setTimeout(function () {
-                    this.saveHistoryState(null, null, true);
-                    this._setup();
+                    window.history.replaceState({_nittro: true}, document.title, document.location.href);
+                    this._.snippetManager.setup();
                     this._showHtmlFlashes();
                     this.trigger('update');
 
@@ -1011,18 +1340,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
         },
 
-        _checkLink: function (link) {
-            return this._.options.whitelistLinks ? DOM.hasClass(link, 'ajax') : !DOM.hasClass(link, 'noajax');
-
-        },
-
-        _handleClick: function (evt) {
-            if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey) {
-                return;
-
-            }
-
-            if (this._checkFormLocator() && this._handleButton(evt)) {
+        _handleLinkClick: function(evt) {
+            if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey || evt.button > 0) {
                 return;
 
             }
@@ -1038,196 +1357,47 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
 
         },
 
-        _checkForm: function (form) {
-            return this._.options.whitelistForms ? DOM.hasClass(form, 'ajax') : !DOM.hasClass(form, 'noajax');
+        _createTransaction: function(url) {
+            var transaction = new Transaction(url);
 
-        },
+            transaction.add('ajax', this._.ajaxAgent);
+            transaction.add('snippets', this._.snippetAgent);
+            transaction.add('history', this._.historyAgent);
 
-        _handleButton: function(evt) {
-            var btn = DOM.closest(evt.target, 'button') || DOM.closest(evt.target, 'input'),
-                frm;
-
-            if (btn && btn.type === 'submit') {
-                if (btn.form && this._checkForm(btn.form)) {
-                    frm = this._.formLocator.getForm(btn.form);
-                    frm.setSubmittedBy(btn.name || null);
-
-                }
-
-                return true;
-
-            }
-        },
-
-        _handleSubmit: function (evt) {
-            if (evt.defaultPrevented || !this._checkFormLocator()) {
-                return;
-
-            }
-
-            if (!(evt.target instanceof HTMLFormElement) || !this._checkForm(evt.target) || !this._checkUrl(evt.target.action)) {
-                return;
-
-            }
-
-            this.sendForm(evt.target, evt);
-
-        },
-
-        _createRequest: function (url, method, data, evt, context) {
-            if (this._.request) {
-                this._.request.abort();
-
-            }
-
-            var create = this.trigger('create-request', {
-                url: url,
-                method: method,
-                data: data,
-                context: context
+            this.trigger('transaction-created', {
+                transaction: transaction
             });
 
-            if (create.isDefaultPrevented()) {
-                evt && evt.preventDefault();
-                return Promise.reject();
-
-            }
-
-            var request = this._.ajax.createRequest(url, method, data);
-
-            try {
-                var p = this._dispatchRequest(request, context, true);
-                evt && evt.preventDefault();
-                return p;
-
-            } catch (e) {
-                return Promise.reject(e);
-
-            }
-        },
-
-        _dispatchRequest: function (request, context, pushState) {
-            this._.request = request;
-
-            var xhr = this._.ajax.dispatch(request); // may throw exception
-
-            var transitionElms,
-                removeElms,
-                transition;
-
-            if (context) {
-                transitionElms = this._getTransitionTargets(context);
-                removeElms = this._getRemoveTargets(context);
-
-                if (removeElms.length) {
-                    DOM.addClass(removeElms, 'nittro-dynamic-remove');
-
-                }
-
-                this._.transitioning = transitionElms.concat(removeElms);
-                transition = this._.transitions.transitionOut(this._.transitioning.slice());
-
-            } else {
-                transitionElms = [];
-                removeElms = [];
-                transition = null;
-
-            }
-
-            var p = Promise.all([xhr, transitionElms, removeElms, pushState || false, transition]);
-            return p.then(this._handleResponse.bind(this), this._handleError.bind(this));
+            return transaction;
 
         },
 
-        _handleResponse: function (queue) {
-            if (!this._.request) {
-                this._cleanup();
-                return null;
-
+        _dispatchTransaction: function(transaction) {
+            if (this._.currentTransaction) {
+                this._.currentTransaction.abort();
             }
 
-            var response = queue[0],
-                transitionElms = queue[1] || this._.transitioning || [],
-                removeElms = queue[2],
-                pushState = queue[3],
-                payload = response.getPayload();
+            this._.currentTransaction = transaction;
 
-            if (typeof payload !== 'object' || !payload) {
-                this._cleanup();
-                return null;
-
-            }
-
-            this._showFlashes(payload.flashes);
-
-            if (this._tryRedirect(payload, pushState)) {
-                return payload;
-
-            } else if (pushState) {
-                this._pushState(payload, this._.request.getUrl());
-
-            }
-
-            this._.request = this._.transitioning = null;
-
-            var dynamic = this._applySnippets(payload.snippets || {}, removeElms);
-            DOM.toggleClass(dynamic, 'nittro-transition-middle', true);
-
-            this._showHtmlFlashes();
-
-            this.trigger('update', payload);
-
-            this._.transitions.transitionIn(transitionElms.concat(dynamic))
-                .then(function () {
-                    DOM.removeClass(dynamic, 'nittro-dynamic-add nittro-dynamic-update');
-
-                });
-
-            return payload;
+            return transaction.dispatch().then(
+                this._handleSuccess.bind(this, transaction),
+                this._handleError.bind(this)
+            );
 
         },
 
         _checkUrl: function(url, current) {
-            if ((url + '').match(/^javascript:/)) {
+            return this._.ajaxAgent.checkUrl(url, current);
+
+        },
+
+        _checkLink: function (link) {
+            if (link.getAttribute('target')) {
                 return false;
             }
 
-            var u = url ? Url.from(url) : Url.fromCurrent(),
-                c = current ? Url.from(current) : Url.fromCurrent(),
-                d = u.compare(c);
+            return this._.options.whitelistLinks ? DOM.hasClass(link, 'nittro-ajax') : !DOM.hasClass(link, 'nittro-no-ajax');
 
-            return d === 0 || d < Url.PART.PORT && d > Url.PART.HASH;
-
-        },
-
-        _checkRedirect: function (payload) {
-            return !this._.options.whitelistRedirects !== !payload.allowAjax && this._checkUrl(payload.redirect);
-
-        },
-
-        _tryRedirect: function (payload, pushState) {
-            if ('redirect' in payload) {
-                if (this._checkRedirect(payload)) {
-                    this._dispatchRequest(this._.ajax.createRequest(payload.redirect), null, pushState);
-
-                } else {
-                    document.location.href = payload.redirect;
-
-                }
-
-                return true;
-
-            }
-        },
-
-        _cleanup: function () {
-            this._.request = null;
-
-            if (this._.transitioning) {
-                this._.transitions.transitionIn(this._.transitioning);
-                this._.transitioning = null;
-
-            }
         },
 
         _showFlashes: function (flashes) {
@@ -1241,6 +1411,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             for (id in flashes) {
                 if (flashes.hasOwnProperty(id) && flashes[id]) {
                     for (i = 0; i < flashes[id].length; i++) {
+                        flashes[id][i].target = id;
                         this.trigger('flash', flashes[id][i]);
 
                     }
@@ -1249,7 +1420,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         },
 
         _showHtmlFlashes: function () {
-            var elms = DOM.getByClassName('flashes-src'),
+            var elms = DOM.getByClassName('nittro-flashes-src'),
                 i, n, data;
 
             for (i = 0, n = elms.length; i < n; i++) {
@@ -1260,9 +1431,18 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
             }
         },
 
-        _handleError: function (evt) {
-            this._cleanup();
-            this.trigger('error', evt);
+        _handleSuccess: function(transaction) {
+            if (transaction.isHistoryState()) {
+                this._.currentUrl = transaction.getUrl();
+
+            }
+
+            this.trigger('update');
+
+        },
+
+        _handleError: function (err) {
+            this.trigger('error', err);
 
         },
 
@@ -1281,61 +1461,10 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, Url, SnippetHelpers, Snipp
         }
     });
 
-    _context.mixin(Service, SnippetHelpers);
-
     _context.register(Service, 'Service');
 
 }, {
     DOM: 'Utils.DOM',
     Arrays: 'Utils.Arrays',
     Url: 'Utils.Url'
-});
-;
-_context.invoke('Nittro.Page.Bridges', function (Nittro) {
-
-    if (!Nittro.DI) {
-        return;
-    }
-
-    var PageDI = _context.extend('Nittro.DI.BuilderExtension', function (containerBuilder, config) {
-        PageDI.Super.call(this, containerBuilder, config);
-    }, {
-        load: function () {
-            var builder = this._getContainerBuilder(),
-                config = this._getConfig();
-
-            builder.addServiceDefinition('page', {
-                factory: 'Nittro.Page.Service()',
-                args: {
-                    options: config
-                },
-                run: true
-            });
-
-            builder.addServiceDefinition('transitions', 'Nittro.Page.Transitions(300)');
-
-        },
-
-        setup: function() {
-            var builder = this._getContainerBuilder();
-
-            if (builder.hasServiceDefinition('formLocator')) {
-                builder.getServiceDefinition('page')
-                    .addSetup('::setFormLocator()');
-            }
-
-            if (builder.hasServiceDefinition('flashes')) {
-                builder.getServiceDefinition('page')
-                    .addSetup(function(flashes) {
-                        this.on('flash', function(evt) {
-                            evt.preventDefault();
-                            flashes.add(null, evt.data.type, evt.data.message);
-                        });
-                    });
-            }
-        }
-    });
-
-    _context.register(PageDI, 'PageDI');
-
 });
