@@ -31,6 +31,15 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 context.method = method;
                 context.data = data;
 
+                var evt = this.trigger('before-transaction', {
+                    url: url,
+                    context: context
+                });
+
+                if (evt.isDefaultPrevented()) {
+                    return Promise.reject();
+                }
+
                 var transaction = this._createTransaction(url),
                     promise;
 
