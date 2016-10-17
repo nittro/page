@@ -50,14 +50,14 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
             builder.addServiceDefinition('snippetAgent', 'Nittro.Page.SnippetAgent()');
             builder.addServiceDefinition('snippetManager', 'Nittro.Page.SnippetManager()');
 
-            if (options.transitions) {
+            if (config.transitions) {
                 builder.addServiceDefinition('transitionHelper', 'Nittro.Page.TransitionHelper()');
 
                 builder.addServiceDefinition('transitionAgent', {
                     factory: 'Nittro.Page.TransitionAgent()',
                     args: {
                         options: {
-                            defaultSelector: options.transitions.defaultSelector
+                            defaultSelector: config.transitions.defaultSelector
                         }
                     }
                 });
