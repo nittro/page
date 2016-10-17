@@ -67,6 +67,8 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
             this._applyAdd(changeset.add, changeset.containers);
             this._applyDynamic(changeset.containers, setup);
 
+            this.trigger('after-update', changeset);
+
             return this._runSnippetsPhaseOnNextFrame(setup, Snippet.PREPARE_SETUP)
                 .then(function () {
                     this._runSnippetsPhase(setup, Snippet.RUN_SETUP);
