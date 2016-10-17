@@ -7,7 +7,6 @@
  */
 
 namespace App\Presenters;
-use Nette;
 use Nittro\Bridges\NittroUI\Presenter;
 
 abstract class BasePresenter extends Presenter {
@@ -19,6 +18,8 @@ abstract class BasePresenter extends Presenter {
     protected function startup() {
         parent::startup();
 
+        $this->getHttpResponse()->addHeader('Access-Control-Allow-Origin', '*');
+        $this->getHttpResponse()->addHeader('Access-Control-Allow-Headers', 'X-Requested-With');
         $this->setDefaultSnippets(['content', 'title']);
 
     }
@@ -30,7 +31,7 @@ abstract class BasePresenter extends Presenter {
 
         if ($this->isAjax()) {
             $this->payload->title = $this->title;
-            
+
         }
 
         $this->template->title = $this->title;

@@ -52,8 +52,11 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
 
             } else if (transaction.isHistoryState()) {
                 window.history.pushState({_nittro: true}, data.title, transaction.getUrl().toAbsolute());
-                document.title = data.title;
 
+            }
+
+            if (data.title) {
+                document.title = data.title;
             }
         }
     });
