@@ -82,6 +82,17 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                         this.on('transaction-created', function(evt) {
                             evt.data.transaction.add('flashes', flashAgent);
                         });
+                    })
+                    .addSetup(function(flashes) {
+                        this.on('error:default', function (evt) {
+                            if (evt.data.type === 'connection') {
+                                flashes.add(null, 'error', 'There was an error connecting to the server. Please check your internet connection and try again.');
+
+                            } else if (evt.data.type !== 'abort') {
+                                flashes.add(null, 'error', 'There was an error processing your request. Please try again later.');
+
+                            }
+                        });
                     });
             }
         }

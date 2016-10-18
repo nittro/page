@@ -14,7 +14,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
         DOM.addListener(window, 'popstate', this._handleState.bind(this));
         DOM.addListener(document, 'click', this._handleLinkClick.bind(this));
-        this.on('error:default', this._showError.bind(this));
 
         this._checkReady();
 
@@ -172,39 +171,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 return false;
             }
 
-            return this._.options.whitelistLinks ? DOM.hasClass(link, 'nittro-ajax') : !DOM.hasClass(link, 'nittro-no-ajax');
+            return DOM.getData(link, 'ajax', !this._.options.whitelistLinks);
 
-        },
-
-        _showFlashes: function (flashes) {
-            if (!flashes) {
-                return;
-
-            }
-
-            var id, i;
-
-            for (id in flashes) {
-                if (flashes.hasOwnProperty(id) && flashes[id]) {
-                    for (i = 0; i < flashes[id].length; i++) {
-                        flashes[id][i].target = id;
-                        this.trigger('flash', flashes[id][i]);
-
-                    }
-                }
-            }
-        },
-
-        _showHtmlFlashes: function () {
-            var elms = DOM.getByClassName('nittro-flashes-src'),
-                i, n, data;
-
-            for (i = 0, n = elms.length; i < n; i++) {
-                data = JSON.parse(elms[i].textContent.trim());
-                elms[i].parentNode.removeChild(elms[i]);
-                this._showFlashes(data);
-
-            }
         },
 
         _handleSuccess: function(transaction) {
@@ -212,28 +180,11 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 this._.currentUrl = transaction.getUrl();
 
             }
-
-            this.trigger('update');
-
         },
 
         _handleError: function (err) {
             this.trigger('error', err);
 
-        },
-
-        _showError: function (evt) {
-            if (evt.data.type === 'connection') {
-                this.trigger('flash', {
-                    type: 'error',
-                    message: 'There was an error connecting to the server. Please check your internet connection and try again.'
-                });
-            } else if (evt.data.type !== 'abort') {
-                this.trigger('flash', {
-                    type: 'error',
-                    message: 'There was an error processing your request. Please try again later.'
-                });
-            }
         }
     });
 

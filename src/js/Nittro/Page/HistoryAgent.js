@@ -16,7 +16,7 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
                 transaction.setIsHistoryState(context.history);
 
             } else if (context.element) {
-                transaction.setIsHistoryState(this._.options.whitelistHistory ? DOM.hasClass(context.element, 'nittro-history') : !DOM.hasClass(context.element, 'nittro-no-history'));
+                transaction.setIsHistoryState(DOM.getData(context.element, 'history', !this._.options.whitelistHistory));
 
             } else {
                 transaction.setIsHistoryState(!this._.options.whitelistHistory);
