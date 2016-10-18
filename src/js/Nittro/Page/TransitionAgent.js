@@ -26,6 +26,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
             transaction.then(this._transitionIn.bind(this, data, false), this._transitionIn.bind(this, data, true));
 
             if (data.elements.length || data.removeTargets.length) {
+                DOM.addClass(data.removeTargets, 'nittro-dynamic-remove');
                 return data.transitionOut = this._transitionOut(data);
 
             }
