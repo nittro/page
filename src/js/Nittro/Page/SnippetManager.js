@@ -24,6 +24,7 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         setup: function() {
+            this.trigger('after-update');
             this._runSnippetsPhase(this._.snippets, Snippet.PREPARE_SETUP);
             this._runSnippetsPhase(this._.snippets, Snippet.RUN_SETUP);
         },

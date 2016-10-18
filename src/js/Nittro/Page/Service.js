@@ -108,8 +108,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 window.setTimeout(function () {
                     window.history.replaceState({_nittro: true}, document.title, document.location.href);
                     this._.snippetManager.setup();
-                    this._showHtmlFlashes();
-                    this.trigger('update');
 
                 }.bind(this), 1);
             }
