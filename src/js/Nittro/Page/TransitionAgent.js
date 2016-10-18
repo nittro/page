@@ -115,7 +115,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
 
             targets = sel ? DOM.find(sel) : [];
 
-            this.trigger('prepare-targets', {
+            this.trigger('prepare-transition-targets', {
                 element: elem,
                 targets: targets
             });
@@ -125,8 +125,16 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
         },
 
         _getRemoveTargets: function (elem) {
-            var sel = DOM.getData(elem, 'dynamic-remove');
-            return sel ? DOM.find(sel) : [];
+            var sel = DOM.getData(elem, 'dynamic-remove'),
+                targets = sel ? DOM.find(sel) : [];
+
+            if (targets.length) {
+                this.trigger('prepare-remove-targets', {
+                    targets: targets.slice()
+                });
+            }
+
+            return targets;
 
         }
     });
