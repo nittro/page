@@ -49,6 +49,7 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
 
             builder.addServiceDefinition('snippetAgent', 'Nittro.Page.SnippetAgent()');
             builder.addServiceDefinition('snippetManager', 'Nittro.Page.SnippetManager()');
+            builder.addServiceDefinition('history', 'Nittro.Page.History()');
 
             if (config.transitions) {
                 builder.addServiceDefinition('transitionHelper', 'Nittro.Page.TransitionHelper()');

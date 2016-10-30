@@ -1,11 +1,12 @@
 describe('Nittro.Page.Service', function () {
 
-    var Page, SnippetManager, SnippetAgent, Ajax, AjaxAgent, HistoryAgent, TransitionHelper, TransitionAgent, MockRequest,
+    var Page, SnippetManager, SnippetAgent, Ajax, AjaxAgent, HistoryAgent, History, TransitionHelper, TransitionAgent, MockRequest,
         snippetManager,
         snippetAgent,
         mockAjax,
         ajaxAgent,
         historyAgent,
+        history,
         transitionHelper,
         transitionAgent,
         testInstance,
@@ -18,6 +19,7 @@ describe('Nittro.Page.Service', function () {
         Ajax = _context.lookup('Mocks.Ajax.Service');
         AjaxAgent = _context.lookup('Nittro.Page.AjaxAgent');
         HistoryAgent = _context.lookup('Nittro.Page.HistoryAgent');
+        History = _context.lookup('Nittro.Page.History'),
         TransitionHelper = _context.lookup('Nittro.Page.TransitionHelper');
         TransitionAgent = _context.lookup('Nittro.Page.TransitionAgent');
         MockRequest = _context.lookup('Mocks.Ajax.Request');
@@ -26,10 +28,11 @@ describe('Nittro.Page.Service', function () {
         snippetAgent = new SnippetAgent(snippetManager);
         mockAjax = new Ajax();
         ajaxAgent = new AjaxAgent(mockAjax);
-        historyAgent = new HistoryAgent();
+        history = new History();
+        historyAgent = new HistoryAgent(history);
         transitionHelper = new TransitionHelper();
         transitionAgent = new TransitionAgent(transitionHelper);
-        testInstance = new Page(ajaxAgent, snippetAgent, historyAgent, snippetManager);
+        testInstance = new Page(ajaxAgent, snippetAgent, historyAgent, snippetManager, history);
 
         testInstance.on('transaction-created', function (evt) {
             evt.data.transaction.add('transitions', transitionAgent);

@@ -5,6 +5,7 @@
 /*! @include file="src/js/Nittro/Page/SnippetAgent.js" */
 /*! @include file="src/js/Nittro/Page/AjaxAgent.js" */
 /*! @include file="src/js/Nittro/Page/HistoryAgent.js" */
+/*! @include file="src/js/Nittro/Page/History.js" */
 /*! @include file="src/js/Nittro/Page/TransitionHelper.js" */
 /*! @include file="src/js/Nittro/Page/TransitionAgent.js" */
 /*! @include file="src/js/Nittro/Page/Transaction.js" */

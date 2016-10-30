@@ -54,8 +54,7 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         applyChanges: function (changeset) {
-            var teardown = Arrays.mergeTree({}, changeset.remove, changeset.update),
-                setup = Arrays.mergeTree({}, changeset.update, changeset.add);
+            var teardown = Arrays.mergeTree({}, changeset.remove, changeset.update);
 
             this._runSnippetsPhase(teardown, Snippet.PREPARE_TEARDOWN);
             this._runSnippetsPhase(teardown, Snippet.RUN_TEARDOWN);
@@ -66,13 +65,13 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
             this._applyRemove(changeset.remove);
             this._applyUpdate(changeset.update);
             this._applyAdd(changeset.add, changeset.containers);
-            this._applyDynamic(changeset.containers, setup);
+            this._applyDynamic(changeset.containers, Arrays.mergeTree({}, changeset.update, changeset.add));
 
             this.trigger('after-update', changeset);
 
-            return this._runSnippetsPhaseOnNextFrame(setup, Snippet.PREPARE_SETUP)
+            return this._runSnippetsPhaseOnNextFrame(this._.snippets, Snippet.PREPARE_SETUP)
                 .then(function () {
-                    this._runSnippetsPhase(setup, Snippet.RUN_SETUP);
+                    this._runSnippetsPhase(this._.snippets, Snippet.RUN_SETUP);
 
                 }.bind(this));
         },

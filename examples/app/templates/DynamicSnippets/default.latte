@@ -1,5 +1,5 @@
 {block content}
-    <table>
+    <table class="dynamic-slide">
         <thead>
             <tr>
                 <th>#</th>
@@ -16,7 +16,7 @@
                     <td>{$entry->value}</td>
                     <td>
                         <a n:href="update! $entry->id" data-transition="false" title="Update entry">*</a>
-                        <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
+                        <a n:href="remove! $entry->id" data-prompt="true" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
                     </td>
                 </tr>
             {/foreach}

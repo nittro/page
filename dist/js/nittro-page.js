@@ -410,6 +410,7 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         setup: function() {
+            this.trigger('after-update');
             this._runSnippetsPhase(this._.snippets, Snippet.PREPARE_SETUP);
             this._runSnippetsPhase(this._.snippets, Snippet.RUN_SETUP);
         },
@@ -439,8 +440,7 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         applyChanges: function (changeset) {
-            var teardown = Arrays.mergeTree({}, changeset.remove, changeset.update),
-                setup = Arrays.mergeTree({}, changeset.update, changeset.add);
+            var teardown = Arrays.mergeTree({}, changeset.remove, changeset.update);
 
             this._runSnippetsPhase(teardown, Snippet.PREPARE_TEARDOWN);
             this._runSnippetsPhase(teardown, Snippet.RUN_TEARDOWN);
@@ -451,11 +451,13 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
             this._applyRemove(changeset.remove);
             this._applyUpdate(changeset.update);
             this._applyAdd(changeset.add, changeset.containers);
-            this._applyDynamic(changeset.containers, setup);
+            this._applyDynamic(changeset.containers, Arrays.mergeTree({}, changeset.update, changeset.add));
 
-            return this._runSnippetsPhaseOnNextFrame(setup, Snippet.PREPARE_SETUP)
+            this.trigger('after-update', changeset);
+
+            return this._runSnippetsPhaseOnNextFrame(this._.snippets, Snippet.PREPARE_SETUP)
                 .then(function () {
-                    this._runSnippetsPhase(setup, Snippet.RUN_SETUP);
+                    this._runSnippetsPhase(this._.snippets, Snippet.RUN_SETUP);
 
                 }.bind(this));
         },
@@ -827,8 +829,9 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
 ;
 _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
 
-    var HistoryAgent = _context.extend(function(options) {
+    var HistoryAgent = _context.extend(function(history, options) {
         this._ = {
+            history: history,
             options: Arrays.mergeTree({}, HistoryAgent.defaults, options)
         };
     }, {
@@ -843,7 +846,7 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
                 transaction.setIsHistoryState(context.history);
 
             } else if (context.element) {
-                transaction.setIsHistoryState(this._.options.whitelistHistory ? DOM.hasClass(context.element, 'nittro-history') : !DOM.hasClass(context.element, 'nittro-no-history'));
+                transaction.setIsHistoryState(DOM.getData(context.element, 'history', !this._.options.whitelistHistory));
 
             } else {
                 transaction.setIsHistoryState(!this._.options.whitelistHistory);
@@ -878,9 +881,12 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
                 transaction.setIsHistoryState(false);
 
             } else if (transaction.isHistoryState()) {
-                window.history.pushState({_nittro: true}, data.title, transaction.getUrl().toAbsolute());
-                document.title = data.title;
+                this._.history.push(transaction.getUrl().toAbsolute(), data.title);
 
+            }
+
+            if (data.title) {
+                document.title = data.title;
             }
         }
     });
@@ -891,6 +897,53 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
     Arrays: 'Utils.Arrays',
     DOM: 'Utils.DOM',
     Url: 'Utils.Url'
+});
+;
+_context.invoke('Nittro.Page', function (DOM) {
+
+    var location = window.history.location || window.location; // support for HTML5 history polyfill
+
+    var History = _context.extend('Nittro.Object', function () {
+        History.Super.call(this);
+        DOM.addListener(window, 'popstate', this._handleState.bind(this));
+
+    }, {
+        push: function (url, title) {
+            window.history.pushState({_nittro: true}, title || document.title, url);
+            title && (document.title = title);
+
+            this.trigger('savestate', {
+                title: title,
+                url: url
+            });
+        },
+
+        replace: function (url, title) {
+            window.history.replaceState({_nittro: true}, title || document.title, url);
+            title && (document.title = title);
+
+            this.trigger('savestate', {
+                title: title,
+                url: url
+            });
+        },
+
+        _handleState: function (evt) {
+            if (evt.state === null) {
+                return;
+            }
+
+            this.trigger('popstate', {
+                title: document.title,
+                url: location.href
+            });
+        }
+    });
+
+    _context.register(History, 'History');
+
+}, {
+    DOM: 'Utils.DOM'
 });
 ;
 _context.invoke('Nittro.Page', function (DOM) {
@@ -1003,6 +1056,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
             transaction.then(this._transitionIn.bind(this, data, false), this._transitionIn.bind(this, data, true));
 
             if (data.elements.length || data.removeTargets.length) {
+                DOM.addClass(data.removeTargets, 'nittro-dynamic-remove');
                 return data.transitionOut = this._transitionOut(data);
 
             }
@@ -1092,7 +1146,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
 
             targets = sel ? DOM.find(sel) : [];
 
-            this.trigger('prepare-targets', {
+            this.trigger('prepare-transition-targets', {
                 element: elem,
                 targets: targets
             });
@@ -1102,8 +1156,16 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
         },
 
         _getRemoveTargets: function (elem) {
-            var sel = DOM.getData(elem, 'dynamic-remove');
-            return sel ? DOM.find(sel) : [];
+            var sel = DOM.getData(elem, 'dynamic-remove'),
+                targets = sel ? DOM.find(sel) : [];
+
+            if (targets.length) {
+                this.trigger('prepare-remove-targets', {
+                    targets: targets.slice()
+                });
+            }
+
+            return targets;
 
         }
     });
@@ -1233,21 +1295,21 @@ _context.invoke('Nittro.Page', function(Url, undefined) {
 ;
 _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
-    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, options) {
+    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, history, options) {
         Service.Super.call(this);
 
         this._.ajaxAgent = ajaxAgent;
         this._.snippetAgent = snippetAgent;
         this._.historyAgent = historyAgent;
         this._.snippetManager = snippetManager;
+        this._.history = history;
         this._.options = Arrays.mergeTree({}, Service.defaults, options);
         this._.setup = false;
         this._.currentTransaction = null;
         this._.currentUrl = Url.fromCurrent();
 
-        DOM.addListener(window, 'popstate', this._handleState.bind(this));
+        this._.history.on('popstate', this._handleState.bind(this));
         DOM.addListener(document, 'click', this._handleLinkClick.bind(this));
-        this.on('error:default', this._showError.bind(this));
 
         this._checkReady();
 
@@ -1263,6 +1325,15 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 context || (context = {});
                 context.method = method;
                 context.data = data;
+
+                var evt = this.trigger('before-transaction', {
+                    url: url,
+                    context: context
+                });
+
+                if (evt.isDefaultPrevented()) {
+                    return Promise.reject();
+                }
 
                 var transaction = this._createTransaction(url),
                     promise;
@@ -1299,16 +1370,12 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         },
 
         _handleState: function (evt) {
-            if (evt.state === null) {
-                return;
-            }
-
             if (!this._checkUrl(null, this._.currentUrl)) {
                 return;
 
             }
 
-            var url = Url.fromCurrent();
+            var url = Url.from(evt.data.url);
             this._.currentUrl = url;
 
             try {
@@ -1331,10 +1398,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 this._.setup = true;
 
                 window.setTimeout(function () {
-                    window.history.replaceState({_nittro: true}, document.title, document.location.href);
+                    this._.history.replace((window.history.location || window.location).href);
                     this._.snippetManager.setup();
-                    this._showHtmlFlashes();
-                    this.trigger('update');
 
                 }.bind(this), 1);
             }
@@ -1396,39 +1461,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 return false;
             }
 
-            return this._.options.whitelistLinks ? DOM.hasClass(link, 'nittro-ajax') : !DOM.hasClass(link, 'nittro-no-ajax');
+            return DOM.getData(link, 'ajax', !this._.options.whitelistLinks);
 
-        },
-
-        _showFlashes: function (flashes) {
-            if (!flashes) {
-                return;
-
-            }
-
-            var id, i;
-
-            for (id in flashes) {
-                if (flashes.hasOwnProperty(id) && flashes[id]) {
-                    for (i = 0; i < flashes[id].length; i++) {
-                        flashes[id][i].target = id;
-                        this.trigger('flash', flashes[id][i]);
-
-                    }
-                }
-            }
-        },
-
-        _showHtmlFlashes: function () {
-            var elms = DOM.getByClassName('nittro-flashes-src'),
-                i, n, data;
-
-            for (i = 0, n = elms.length; i < n; i++) {
-                data = JSON.parse(elms[i].textContent.trim());
-                elms[i].parentNode.removeChild(elms[i]);
-                this._showFlashes(data);
-
-            }
         },
 
         _handleSuccess: function(transaction) {
@@ -1436,28 +1470,11 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 this._.currentUrl = transaction.getUrl();
 
             }
-
-            this.trigger('update');
-
         },
 
         _handleError: function (err) {
             this.trigger('error', err);
 
-        },
-
-        _showError: function (evt) {
-            if (evt.data.type === 'connection') {
-                this.trigger('flash', {
-                    type: 'error',
-                    message: 'There was an error connecting to the server. Please check your internet connection and try again.'
-                });
-            } else if (evt.data.type !== 'abort') {
-                this.trigger('flash', {
-                    type: 'error',
-                    message: 'There was an error processing your request. Please try again later.'
-                });
-            }
         }
     });
 

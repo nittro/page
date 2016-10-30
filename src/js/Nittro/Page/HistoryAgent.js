@@ -1,7 +1,8 @@
 _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
 
-    var HistoryAgent = _context.extend(function(options) {
+    var HistoryAgent = _context.extend(function(history, options) {
         this._ = {
+            history: history,
             options: Arrays.mergeTree({}, HistoryAgent.defaults, options)
         };
     }, {
@@ -51,7 +52,7 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
                 transaction.setIsHistoryState(false);
 
             } else if (transaction.isHistoryState()) {
-                window.history.pushState({_nittro: true}, data.title, transaction.getUrl().toAbsolute());
+                this._.history.push(transaction.getUrl().toAbsolute(), data.title);
 
             }
 

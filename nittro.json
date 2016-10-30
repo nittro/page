@@ -7,6 +7,7 @@
             "src/js/Nittro/Page/SnippetAgent.js",
             "src/js/Nittro/Page/AjaxAgent.js",
             "src/js/Nittro/Page/HistoryAgent.js",
+            "src/js/Nittro/Page/History.js",
             "src/js/Nittro/Page/TransitionHelper.js",
             "src/js/Nittro/Page/TransitionAgent.js",
             "src/js/Nittro/Page/Transaction.js",

@@ -17,7 +17,7 @@ class DynamicSnippetsPresenter extends BasePresenter {
 
     public function actionRegenerate() {
         $session = $this->getSession('dynamicDemo');
-        $session->entries = $this->createDemoEntries();
+        unset($session->entries);
         $this->redirect('default');
 
     }
@@ -115,7 +115,14 @@ class DynamicSnippetsPresenter extends BasePresenter {
         $entries = $this->getEntries();
 
         uasort($entries, function($a, $b) {
-            return $a->value - $b->value;
+            $r = $a->value - $b->value;
+
+            if ($r !== 0) {
+                return $r;
+            }
+
+            return $a->id - $b->id;
+
         });
 
         $this->template->entries = $entries;

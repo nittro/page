@@ -1,18 +1,19 @@
 _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
-    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, options) {
+    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, history, options) {
         Service.Super.call(this);
 
         this._.ajaxAgent = ajaxAgent;
         this._.snippetAgent = snippetAgent;
         this._.historyAgent = historyAgent;
         this._.snippetManager = snippetManager;
+        this._.history = history;
         this._.options = Arrays.mergeTree({}, Service.defaults, options);
         this._.setup = false;
         this._.currentTransaction = null;
         this._.currentUrl = Url.fromCurrent();
 
-        DOM.addListener(window, 'popstate', this._handleState.bind(this));
+        this._.history.on('popstate', this._handleState.bind(this));
         DOM.addListener(document, 'click', this._handleLinkClick.bind(this));
 
         this._checkReady();
@@ -74,16 +75,12 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         },
 
         _handleState: function (evt) {
-            if (evt.state === null) {
-                return;
-            }
-
             if (!this._checkUrl(null, this._.currentUrl)) {
                 return;
 
             }
 
-            var url = Url.fromCurrent();
+            var url = Url.from(evt.data.url);
             this._.currentUrl = url;
 
             try {
@@ -106,7 +103,7 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 this._.setup = true;
 
                 window.setTimeout(function () {
-                    window.history.replaceState({_nittro: true}, document.title, document.location.href);
+                    this._.history.replace((window.history.location || window.location).href);
                     this._.snippetManager.setup();
 
                 }.bind(this), 1);

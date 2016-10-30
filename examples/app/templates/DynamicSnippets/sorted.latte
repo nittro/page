@@ -18,15 +18,15 @@
                 <td>&nbsp;</td>
             </tr>
         </thead>
-        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.nittro-transition-fade" data-dynamic-sort=".value(value)">
+        <tbody n:snippet="entries" n:dynamic="entry-\d+" data-dynamic-element="tr.nittro-transition-fade" data-dynamic-sort=".value(value), .id(id)">
             {foreach $entries as $entry}
                 <tr n:snippet="entry-$entry->id" class="nittro-transition-fade">
-                    <td>{$entry->id}</td>
+                    <td class="id" data-id="{$entry->id}">{$entry->id}</td>
                     <td>| {$entry->name} |</td>
                     <td class="value" data-value="{$entry->value}">{$entry->value}</td>
                     <td>
                         <a n:href="update! $entry->id" data-transition="#{snippetId entry-$entry->id}" title="Update entry">*</a>
-                        <a n:href="remove! $entry->id" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
+                        <a n:href="remove! $entry->id" data-prompt="true" data-dynamic-remove="#{snippetId entry-$entry->id}" title="Remove entry">&times;</a>
                     </td>
                 </tr>
             {/foreach}
