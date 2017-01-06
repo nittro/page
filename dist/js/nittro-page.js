@@ -1466,6 +1466,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         },
 
         _handleSuccess: function(transaction) {
+            this._.currentTransaction = null;
+
             if (transaction.isHistoryState()) {
                 this._.currentUrl = transaction.getUrl();
 
@@ -1473,8 +1475,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         },
 
         _handleError: function (err) {
+            this._.currentTransaction = null;
             this.trigger('error', err);
-
         }
     });
 
