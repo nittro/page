@@ -21,9 +21,8 @@ _context.invoke('Nittro.Page.Bridges.PageFlashes', function () {
             if (agent === 'ajax' && action === 'response') {
                 var payload = actionData.getPayload();
 
-                if (payload.flashes) {
+                if (!payload.redirect && payload.flashes) {
                     this._showFlashes(payload.flashes);
-
                 }
             }
         },
