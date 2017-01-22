@@ -5,8 +5,7 @@ _context.invoke(function (Nittro) {
         snippetManager = new Nittro.Page.SnippetManager(),
         snippetAgent = new Nittro.Page.SnippetAgent(snippetManager),
         historyAgent = new Nittro.Page.HistoryAgent(),
-        transitionHelper = new Nittro.Page.TransitionHelper(),
-        transitionAgent = new Nittro.Page.TransitionAgent(transitionHelper),
+        transitionAgent = new Nittro.Page.TransitionAgent(),
         flashes = new Nittro.Extras.Flashes.Service(),
         flashAgent = new Nittro.Page.Bridges.PageFlashes.FlashAgent(flashes);
 

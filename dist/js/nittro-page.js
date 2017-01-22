@@ -946,94 +946,11 @@ _context.invoke('Nittro.Page', function (DOM) {
     DOM: 'Utils.DOM'
 });
 ;
-_context.invoke('Nittro.Page', function (DOM) {
+_context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined) {
 
-    var TransitionHelper = _context.extend(function() {
-        this._ = {
-            support: !!window.getComputedStyle
-        };
-
-        if (this._.support) try {
-            var s = DOM.create('span').style;
-
-            this._.support = [
-                'transition',
-                'WebkitTransition',
-                'MozTransition',
-                'msTransition',
-                'OTransition'
-            ].some(function(prop) {
-                return prop in s;
-            });
-
-            s = null;
-
-        } catch (e) { }
-
-    }, {
-        transition: function(elements, classes, forceLayout) {
-            if (!this._.support || !elements.length) {
-                return Promise.resolve(elements);
-
-            } else {
-                return this._resolve(elements, classes, forceLayout);
-
-            }
-        },
-
-        _resolve: function (elements, classes, forceLayout) {
-            if (forceLayout) {
-                var foo = window.pageXOffset; // needed to force layout and thus run asynchronously
-
-            }
-
-            classes.add && DOM.addClass(elements, classes.add);
-            classes.remove && DOM.removeClass(elements, classes.remove);
-
-            var duration = this._getDuration(elements);
-
-            return new Promise(function (fulfill) {
-                window.setTimeout(function () {
-                    classes.add && DOM.removeClass(elements, classes.add);
-                    classes.after && DOM.addClass(elements, classes.after);
-                    fulfill(elements);
-
-                }.bind(this), duration);
-            }.bind(this));
-        },
-
-        _getDuration: function (elements) {
-            var durations = DOM.getStyle(elements, 'animationDuration')
-                .concat(DOM.getStyle(elements, 'transitionDuration'))
-                .map(function(d) {
-                    if (!d) {
-                        return 0;
-                    }
-
-                    return Math.max.apply(null, d.split(/\s*,\s*/g).map(function(v) {
-                        v = v.match(/^((?:\d*\.)?\d+)(m?s)$/);
-                        return v ? parseFloat(v[1]) * (v[2] === 'ms' ? 1 : 1000) : 0;
-
-                    }));
-                });
-
-            return durations.length ? Math.max.apply(null, durations) : 0;
-
-        }
-    });
-
-    _context.register(TransitionHelper, 'TransitionHelper');
-
-}, {
-    DOM: 'Utils.DOM'
-});
-;
-_context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
-
-    var TransitionAgent = _context.extend('Nittro.Object', function(transitionHelper, options) {
+    var TransitionAgent = _context.extend('Nittro.Object', function(options) {
         TransitionAgent.Super.call(this);
 
-        this._.transitionHelper = transitionHelper;
         this._.ready = true;
         this._.queue = [];
         this._.options = Arrays.mergeTree({}, TransitionAgent.defaults, options);
@@ -1115,7 +1032,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
         },
 
         _transition: function(elements, dir) {
-            return this._.transitionHelper.transition(elements, {
+            return CSSTransitions.run(elements, {
                     add: 'nittro-transition-active nittro-transition-' + dir,
                     remove: 'nittro-transition-middle',
                     after: dir === 'out' ? 'nittro-transition-middle' : null
@@ -1174,7 +1091,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
 
 }, {
     DOM: 'Utils.DOM',
-    Arrays: 'Utils.Arrays'
+    Arrays: 'Utils.Arrays',
+    CSSTransitions: 'Utils.CSSTransitions'
 });
 ;
 _context.invoke('Nittro.Page', function(Url, undefined) {

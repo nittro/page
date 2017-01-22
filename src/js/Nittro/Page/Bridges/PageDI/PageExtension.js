@@ -52,8 +52,6 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
             builder.addServiceDefinition('history', 'Nittro.Page.History()');
 
             if (config.transitions) {
-                builder.addServiceDefinition('transitionHelper', 'Nittro.Page.TransitionHelper()');
-
                 builder.addServiceDefinition('transitionAgent', {
                     factory: 'Nittro.Page.TransitionAgent()',
                     args: {

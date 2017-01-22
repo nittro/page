@@ -1,9 +1,8 @@
-_context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
+_context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined) {
 
-    var TransitionAgent = _context.extend('Nittro.Object', function(transitionHelper, options) {
+    var TransitionAgent = _context.extend('Nittro.Object', function(options) {
         TransitionAgent.Super.call(this);
 
-        this._.transitionHelper = transitionHelper;
         this._.ready = true;
         this._.queue = [];
         this._.options = Arrays.mergeTree({}, TransitionAgent.defaults, options);
@@ -85,7 +84,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
         },
 
         _transition: function(elements, dir) {
-            return this._.transitionHelper.transition(elements, {
+            return CSSTransitions.run(elements, {
                     add: 'nittro-transition-active nittro-transition-' + dir,
                     remove: 'nittro-transition-middle',
                     after: dir === 'out' ? 'nittro-transition-middle' : null
@@ -144,5 +143,6 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, undefined) {
 
 }, {
     DOM: 'Utils.DOM',
-    Arrays: 'Utils.Arrays'
+    Arrays: 'Utils.Arrays',
+    CSSTransitions: 'Utils.CSSTransitions'
 });
