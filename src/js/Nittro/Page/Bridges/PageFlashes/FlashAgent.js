@@ -33,7 +33,7 @@ _context.invoke('Nittro.Page.Bridges.PageFlashes', function () {
             for (id in flashes) {
                 if (flashes.hasOwnProperty(id) && flashes[id]) {
                     for (i = 0; i < flashes[id].length; i++) {
-                        this._.flashes.add(id, flashes[id][i].type, flashes[id][i].message);
+                        this._.flashes.add(flashes[id][i].message, flashes[id][i].type, id + '-messages');
 
                     }
                 }

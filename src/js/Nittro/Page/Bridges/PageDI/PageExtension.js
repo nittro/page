@@ -11,6 +11,10 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 allowOrigins: null,
                 transitions: {
                     defaultSelector: '.nittro-transition-auto'
+                },
+                i18n: {
+                    connectionError: 'There was an error connecting to the server. Please check your internet connection and try again.',
+                    unknownError: 'There was an error processing your request. Please try again later.'
                 }
             }
         },
@@ -71,7 +75,8 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
         },
 
         setup: function() {
-            var builder = this._getContainerBuilder();
+            var builder = this._getContainerBuilder(),
+                config = this._getConfig();
 
             if (builder.hasServiceDefinition('flashes')) {
                 builder.addServiceDefinition('flashAgent', 'Nittro.Page.Bridges.PageFlashes.FlashAgent()');
@@ -85,10 +90,10 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                     .addSetup(function(flashes) {
                         this.on('error:default', function (evt) {
                             if (evt.data.type === 'connection') {
-                                flashes.add(null, 'error', 'There was an error connecting to the server. Please check your internet connection and try again.');
+                                flashes.add(config.i18n.connectionError, 'error');
 
                             } else if (evt.data.type !== 'abort') {
-                                flashes.add(null, 'error', 'There was an error processing your request. Please try again later.');
+                                flashes.add(config.i18n.unknownError, 'error');
 
                             }
                         });
