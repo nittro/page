@@ -1,16 +1,16 @@
 {
     "files": {
         "js": [
-            "src/js/Nittro/Page/Snippet.js",
-            "src/js/Nittro/Page/SnippetManagerHelpers.js",
-            "src/js/Nittro/Page/SnippetManager.js",
-            "src/js/Nittro/Page/SnippetAgent.js",
-            "src/js/Nittro/Page/AjaxAgent.js",
-            "src/js/Nittro/Page/HistoryAgent.js",
-            "src/js/Nittro/Page/History.js",
-            "src/js/Nittro/Page/TransitionAgent.js",
-            "src/js/Nittro/Page/Transaction.js",
-            "src/js/Nittro/Page/Service.js"
+            "src/js/Snippet.js",
+            "src/js/SnippetManagerHelpers.js",
+            "src/js/SnippetManager.js",
+            "src/js/SnippetAgent.js",
+            "src/js/AjaxAgent.js",
+            "src/js/HistoryAgent.js",
+            "src/js/History.js",
+            "src/js/TransitionAgent.js",
+            "src/js/Transaction.js",
+            "src/js/Service.js"
         ],
         "css": [
             "src/css/transitions.less"
@@ -19,15 +19,15 @@
     "bridges": {
         "nittro-di": {
             "files": [
-                "src/js/Nittro/Page/Bridges/PageDI/PageExtension.js"
+                "src/js/Bridges/PageDI/PageExtension.js"
             ],
             "extensions": {
                 "page": "Nittro.Page.Bridges.PageDI.PageExtension()"
             }
         },
-        "nittro-extras-flashes": {
+        "nittro-flashes": {
             "files": [
-                "src/js/Nittro/Page/Bridges/PageFlashes/FlashAgent.js"
+                "src/js/Bridges/PageFlashes/FlashAgent.js"
             ]
         }
     },
