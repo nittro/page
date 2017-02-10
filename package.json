@@ -1,30 +1,32 @@
 {
-    "name": "nittro-page",
-    "homepage": "https://www.nittro.org",
-    "license": "MIT",
-    "version": "2.0.0-rc.2",
-    "author": "Dan Kadera <me@subsonic.cz>",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/nittro/page.git"
-    },
-    "bugs": {
-        "url": "https://github.com/nittro/page/issues",
-        "email": "nittro@nittro.org"
-    },
-    "dependencies": {
-        "nittro-core": "^2.0.0-rc.4",
-        "nittro-ajax": "^2.0.0-rc.2"
-    },
-    "devDependencies": {
-        "nittro-flashes": "^2.0.0-rc.2",
-        "nittro-di": "^2.0.0-rc.2",
-        "nittro-forms": "^2.0.0-rc.2",
-        "gulp": "^3.9.1",
-        "gulp-jasmine-browser": "^1.7.1",
-        "phantomjs-prebuilt": "^2.1.14"
-    },
-    "scripts": {
-        "test": "gulp test"
-    }
+  "name": "nittro-page",
+  "homepage": "https://www.nittro.org",
+  "license": "MIT",
+  "version": "2.0.0-rc.2",
+  "author": "Dan Kadera <me@subsonic.cz>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nittro/page.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nittro/page/issues",
+    "email": "nittro@nittro.org"
+  },
+  "dependencies": {
+    "nittro-core": "^2.0.0-rc.4",
+    "nittro-ajax": "^2.0.0-rc.2"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-add-src": "^0.2.0",
+    "gulp-jasmine-browser": "^1.7.1",
+    "gulp-less": "^3.3.0",
+    "nittro-di": "^2.0.0-rc.2",
+    "nittro-flashes": "^2.0.0-rc.2",
+    "nittro-forms": "^2.0.0-rc.2",
+    "phantomjs-prebuilt": "^2.1.14"
+  },
+  "scripts": {
+    "test": "gulp test"
+  }
 }
