@@ -10,5 +10,13 @@
         "url": "https://github.com/nittro/page/issues",
         "email": "nittro@nittro.org"
     },
-    "devDependencies": {}
+    "dependencies": {
+        "nittro-core": "master",
+        "nittro-ajax": "master"
+    },
+    "devDependencies": {
+        "nittro-flashes": "master",
+        "nittro-di": "master",
+        "nittro-forms": "master"
+    }
 }
