@@ -2,6 +2,8 @@
     "name": "nittro-page",
     "homepage": "https://www.nittro.org",
     "license": "MIT",
+    "version": "2.0.0-rc.2",
+    "author": "Dan Kadera <me@subsonic.cz>",
     "repository": {
         "type": "git",
         "url": "https://github.com/nittro/page.git"
@@ -11,12 +13,18 @@
         "email": "nittro@nittro.org"
     },
     "dependencies": {
-        "nittro-core": "master",
-        "nittro-ajax": "master"
+        "nittro-core": "^2.0.0-rc.4",
+        "nittro-ajax": "^2.0.0-rc.2"
     },
     "devDependencies": {
-        "nittro-flashes": "master",
-        "nittro-di": "master",
-        "nittro-forms": "master"
+        "nittro-flashes": "^2.0.0-rc.2",
+        "nittro-di": "^2.0.0-rc.2",
+        "nittro-forms": "^2.0.0-rc.2",
+        "gulp": "^3.9.1",
+        "gulp-jasmine-browser": "^1.7.1",
+        "phantomjs-prebuilt": "^2.1.14"
+    },
+    "scripts": {
+        "test": "gulp test"
     }
 }
