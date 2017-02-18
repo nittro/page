@@ -69,8 +69,18 @@ _context.invoke('Mocks.Ajax', function () {
         },
 
         dispatch: function (request) {
-            return new Promise(function (fulfill, reject) {
+            var promise, abort = function() {};
+
+            promise = new Promise(function (fulfill, reject) {
                 var response = request.response;
+
+                abort = function () {
+                    reject({
+                        type: 'abort',
+                        status: null,
+                        request: request
+                    });
+                };
 
                 function resolve() {
                     if (response.options.fail) {
@@ -86,6 +96,10 @@ _context.invoke('Mocks.Ajax', function () {
                     resolve();
                 }
             }.bind(this));
+
+            request.setDispatched(promise, abort);
+
+            return promise;
         }
     };
 

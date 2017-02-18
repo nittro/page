@@ -9,6 +9,7 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 whitelistLinks: false,
                 whitelistRedirects: false,
                 allowOrigins: null,
+                csp: null,
                 transitions: {
                     defaultSelector: '.nittro-transition-auto'
                 },
@@ -71,6 +72,26 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                             evt.data.transaction.add('transitions', transitionAgent);
                         });
                     });
+            }
+
+            if (config.csp !== false) {
+                var nonce = document.getElementsByTagName('script').item(0).getAttribute('nonce') || null;
+
+                if (config.csp || nonce) {
+                    builder.addServiceDefinition('cspAgent', {
+                        factory: 'Nittro.Page.CspAgent()',
+                        args: {
+                            nonce: nonce
+                        }
+                    });
+
+                    builder.getServiceDefinition('page')
+                        .addSetup(function(cspAgent) {
+                            this.on('transaction-created', function(evt) {
+                                evt.data.transaction.add('csp', cspAgent);
+                            });
+                        });
+                }
             }
         },
 
