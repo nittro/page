@@ -14,42 +14,47 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
             }
         },
 
-        init: function(transaction, context) {
-            return {
+        initTransaction: function(transaction, context) {
+            var data = {
                 elements: this._getTransitionTargets(context.element),
                 removeTargets: context.element ? this._getRemoveTargets(context.element) : []
             };
+
+            transaction.on('dispatch', this._dispatch.bind(this, data));
+            transaction.on('abort', this._abort.bind(this, data));
+            transaction.on('snippets-apply', this._handleSnippets.bind(this, data));
         },
 
-        dispatch: function(transaction, data) {
-            transaction.then(this._transitionIn.bind(this, data, false), this._transitionIn.bind(this, data, true));
+        _dispatch: function(data, evt) {
+            evt.target.then(this._transitionIn.bind(this, data, false), this._transitionIn.bind(this, data, true));
 
             if (data.elements.length || data.removeTargets.length) {
                 DOM.addClass(data.removeTargets, 'nittro-dynamic-remove');
-                return data.transitionOut = this._transitionOut(data);
-
+                data.transitionOut = this._transitionOut(data);
+                evt.waitFor(data.transitionOut);
             }
         },
 
-        abort: function(transaction, data) {
+        _abort: function(data) {
             if (data.elements.length || data.removeTargets.length) {
                 this._transitionIn(data, true);
-
             }
         },
 
-        handleAction: function(transaction, agent, action, actionData, data) {
-            if (agent === 'snippets' && action === 'apply-changes') {
-                for (var id in actionData.add) {
-                    if (actionData.add.hasOwnProperty(id)) {
-                        DOM.addClass(actionData.add[id].content, 'nittro-dynamic-add', 'nittro-transition-middle');
-                        data.elements.push(actionData.add[id].content);
+        _handleSnippets: function(data, evt) {
+            var changeset = evt.data.changeset,
+                id;
 
-                    }
+            for (id in changeset.add) {
+                if (changeset.add.hasOwnProperty(id)) {
+                    DOM.addClass(changeset.add[id].content, 'nittro-dynamic-add', 'nittro-transition-middle');
+                    data.elements.push(changeset.add[id].content);
+
                 }
+            }
 
-                return data.transitionOut;
-
+            if (data.transitionOut) {
+                evt.waitFor(data.transitionOut);
             }
         },
 

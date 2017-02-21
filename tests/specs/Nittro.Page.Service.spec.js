@@ -32,7 +32,7 @@ describe('Nittro.Page.Service', function () {
         testInstance = new Page(ajaxAgent, snippetAgent, historyAgent, snippetManager, history);
 
         testInstance.on('transaction-created', function (evt) {
-            evt.data.transaction.add('transitions', transitionAgent);
+            evt.data.transaction.add(transitionAgent);
         });
 
         testContainer = document.createElement('div');

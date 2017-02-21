@@ -4,26 +4,18 @@ _context.invoke('Nittro.Page.Bridges.PageFlashes', function () {
         this._ = {
             flashes: flashes
         };
+
+        this._handleResponse = this._handleResponse.bind(this);
     }, {
-        init: function (transaction, context) {
-
+        initTransaction: function (transaction) {
+            transaction.on('ajax-response', this._handleResponse);
         },
 
-        dispatch: function (transaction, data) {
+        _handleResponse: function (evt) {
+            var payload = evt.data.response.getPayload();
 
-        },
-
-        abort: function (transaction, data) {
-
-        },
-
-        handleAction: function (transaction, agent, action, actionData, data) {
-            if (agent === 'ajax' && action === 'response') {
-                var payload = actionData.getPayload();
-
-                if (!payload.redirect && payload.flashes) {
-                    this._showFlashes(payload.flashes);
-                }
+            if (!payload.redirect && payload.flashes) {
+                this._showFlashes(payload.flashes);
             }
         },
 

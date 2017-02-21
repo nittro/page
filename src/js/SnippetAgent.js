@@ -5,34 +5,29 @@ _context.invoke('Nittro.Page', function() {
             snippetManager: snippetManager
         };
     }, {
-        init: function(transaction, context) {
-            return {
+        initTransaction: function(transaction, context) {
+            var data = {
                 removeTargets: context.element ? this._.snippetManager.getRemoveTargets(context.element) : []
             };
+
+            transaction.on('ajax-response', this._handleResponse.bind(this, data));
         },
 
-        dispatch: function(transaction, data) {
+        _handleResponse: function(data, evt) {
+            var payload = evt.data.response.getPayload(),
+                changeset;
 
-        },
-
-        abort: function(transaction, data) {
-            // clean up remove targets
-        },
-
-        handleAction: function(transaction, agent, action, actionData, data) {
-            if (agent === 'ajax' && action === 'response') {
-                var payload = actionData.getPayload(),
-                    changeset;
-
-                if (payload.snippets || data.removeTargets.length) {
-                    changeset = this._.snippetManager.computeChanges(payload.snippets || {}, data.removeTargets);
-
-                    return transaction.dispatchAgentAction('snippets', 'apply-changes', changeset)
-                        .then(function() {
-                            this._.snippetManager.applyChanges(changeset);
-                        }.bind(this));
-                }
+            if (payload.snippets || data.removeTargets.length) {
+                changeset = this._.snippetManager.computeChanges(payload.snippets || {}, data.removeTargets);
+                evt.waitFor(this._applyChangeset(evt.target, changeset));
             }
+        },
+
+        _applyChangeset: function (transaction, changeset) {
+            return transaction.trigger('snippets-apply', { changeset: changeset })
+                .then(function() {
+                    this._.snippetManager.applyChanges(changeset);
+                }.bind(this));
         }
     });
 

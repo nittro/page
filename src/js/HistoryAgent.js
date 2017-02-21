@@ -12,38 +12,32 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
             }
         },
 
-        init: function (transaction, context) {
+        initTransaction: function (transaction, context) {
             if ('history' in context) {
                 transaction.setIsHistoryState(context.history);
-
             } else if (context.element) {
                 transaction.setIsHistoryState(DOM.getData(context.element, 'history', !this._.options.whitelistHistory));
-
             } else {
                 transaction.setIsHistoryState(!this._.options.whitelistHistory);
-
             }
 
-            return {
+            var data = {
                 title: document.title
             };
+
+            transaction.on('dispatch', this._dispatch.bind(this, data));
+            transaction.on('ajax-response', this._handleResponse.bind(this, data));
         },
 
-        dispatch: function (transaction, data) {
-            transaction.then(this._saveState.bind(this, transaction, data));
+        _dispatch: function (data, evt) {
+            evt.target.then(this._saveState.bind(this, evt.target, data));
         },
 
-        abort: function (transaction, data) {
+        _handleResponse: function (data, evt) {
+            var payload = evt.data.response.getPayload();
 
-        },
-
-        handleAction: function (transaction, agent, action, actionData, data) {
-            if (agent === 'ajax' && action === 'response') {
-                var payload = actionData.getPayload();
-
-                if (payload.title) {
-                    data.title = payload.title;
-                }
+            if (payload.title) {
+                data.title = payload.title;
             }
         },
 

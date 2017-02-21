@@ -5,8 +5,6 @@ _context.invoke('Nittro.Page', function(Url, undefined) {
 
         this._.url = Url.from(url);
         this._.history = true;
-        this._.agents = {};
-        this._.data = {};
 
         this._.promise = new Promise(function(fulfill, reject) {
             this._.fulfill = fulfill;
@@ -14,11 +12,6 @@ _context.invoke('Nittro.Page', function(Url, undefined) {
         }.bind(this));
 
     }, {
-        add: function(name, agent) {
-            this._.agents[name] = agent;
-            return this;
-        },
-
         getUrl: function() {
             return this._.url;
         },
@@ -37,74 +30,23 @@ _context.invoke('Nittro.Page', function(Url, undefined) {
             return this;
         },
 
-        init: function (context) {
-            for (var name in this._.agents) {
-                if (this._.agents.hasOwnProperty(name)) {
-                    this._.data[name] = this._.agents[name].init(this, context);
-                }
-            }
-
-            return this;
-
-        },
-
         dispatch: function() {
-            var name, result, queue = [];
-
-            for (name in this._.agents) {
-                if (this._.agents.hasOwnProperty(name)) {
-                    result = this._.agents[name].dispatch(this, this._.data[name]);
-
-                    if (result) {
-                        queue.push(result);
-                    }
-                }
-            }
-
-            if (queue.length) {
-                Promise.all(queue).then(this._.fulfill.bind(this), this._.reject.bind(this));
-
-            } else {
-                this._.reject();
-
-            }
+            this.trigger('dispatch')
+                .then(this._.fulfill.bind(this), this._.reject.bind(this));
 
             return this;
 
         },
 
         abort: function() {
-            for (var name in this._.agents) {
-                if (this._.agents.hasOwnProperty(name)) {
-                    this._.agents[name].abort(this, this._.data[name]);
-                }
-            }
-
-            this._.reject();
-
+            this._.reject({type: 'abort'});
+            this.trigger('abort');
             return this;
 
         },
 
         then: function(onfulfilled, onrejected) {
             return this._.promise.then(onfulfilled, onrejected);
-        },
-
-        dispatchAgentAction: function(agent, action, data) {
-            var name, result, queue = [];
-
-            for (name in this._.agents) {
-                if (name !== agent && this._.agents.hasOwnProperty(name)) {
-                    result = this._.agents[name].handleAction(this, agent, action, data, this._.data[name]);
-
-                    if (result) {
-                        queue.push(result);
-                    }
-                }
-            }
-
-            return queue.length ? Promise.all(queue) : Promise.resolve();
-
         }
     });
 

@@ -5,40 +5,35 @@ _context.invoke('Nittro.Page', function () {
             nonce: nonce
         };
     }, {
-        init: function (transaction, context) {
-            return {
+        initTransaction: function (transaction) {
+            var data = {
                 nonce: null,
                 pending: null
             };
+
+            transaction.on('ajax-response', this._handleResponse.bind(this, data));
+            transaction.on('snippets-apply', this._handleSnippets.bind(this, data));
         },
 
-        dispatch: function (transaction, data) {
+        _handleResponse: function (data, evt) {
+            var m = /(?:^|;\s*)script-src\s[^;]*'nonce-([^']+)'/.exec(evt.data.response.getHeader('Content-Security-Policy') || evt.data.response.getHeader('Content-Security-Policy-Report-Only') || '');
 
+            if (m) {
+                data.nonce = m[1];
+            } else {
+                data.nonce = false;
+            }
+
+            if (data.pending) {
+                data.pending();
+            }
         },
 
-        abort: function (transaction, data) {
-
-        },
-
-        handleAction: function (transaction, agent, action, actionData, data) {
-            if (agent === 'ajax' && action === 'response') {
-                var m = /(?:^|;\s*)script-src\s[^;]*'nonce-([^']+)'/.exec(actionData.getHeader('Content-Security-Policy') || actionData.getHeader('Content-Security-Policy-Report-Only') || '');
-
-                if (m) {
-                    data.nonce = m[1];
-                } else {
-                    data.nonce = false;
-                }
-
-                if (data.pending) {
-                    data.pending();
-                }
-            } else if (agent === 'snippets' && action === 'apply-changes') {
-                if (data.nonce !== null) {
-                    this._handleChangeset(actionData, data.nonce);
-                } else {
-                    return this._scheduleHandleChangeset(actionData, data);
-                }
+        _handleSnippets: function (data, evt) {
+            if (data.nonce !== null) {
+                this._handleChangeset(evt.data.changeset, data.nonce);
+            } else {
+                evt.waitFor(this._scheduleHandleChangeset(evt.data.changeset, data));
             }
         },
 

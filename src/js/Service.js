@@ -40,17 +40,15 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                     return Promise.reject();
                 }
 
-                var transaction = this._createTransaction(url),
-                    promise;
-
-                transaction.init(context);
-
-                promise = this._dispatchTransaction(transaction);
-
                 context.event && context.event.preventDefault();
 
-                return promise;
-
+                return evt.then(function () {
+                    if (evt.isDefaultPrevented()) {
+                        return Promise.reject();
+                    } else {
+                        return this._createTransaction(url, context);
+                    }
+                }.bind(this));
             } catch (e) {
                 return Promise.reject(e);
 
@@ -127,18 +125,19 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
         },
 
-        _createTransaction: function(url) {
+        _createTransaction: function(url, context) {
             var transaction = new Transaction(url);
 
-            transaction.add('ajax', this._.ajaxAgent);
-            transaction.add('snippets', this._.snippetAgent);
-            transaction.add('history', this._.historyAgent);
+            this._.ajaxAgent.initTransaction(transaction, context);
+            this._.snippetAgent.initTransaction(transaction, context);
+            this._.historyAgent.initTransaction(transaction, context);
 
             this.trigger('transaction-created', {
-                transaction: transaction
+                transaction: transaction,
+                context: context
             });
 
-            return transaction;
+            return this._dispatchTransaction(transaction);
 
         },
 

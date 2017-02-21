@@ -69,7 +69,7 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 builder.getServiceDefinition('page')
                     .addSetup(function(transitionAgent) {
                         this.on('transaction-created', function(evt) {
-                            evt.data.transaction.add('transitions', transitionAgent);
+                            transitionAgent.initTransaction(evt.data.transaction, evt.data.context);
                         });
                     });
             }
@@ -88,7 +88,7 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                     builder.getServiceDefinition('page')
                         .addSetup(function(cspAgent) {
                             this.on('transaction-created', function(evt) {
-                                evt.data.transaction.add('csp', cspAgent);
+                                cspAgent.initTransaction(evt.data.transaction);
                             });
                         });
                 }
@@ -105,7 +105,7 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 builder.getServiceDefinition('page')
                     .addSetup(function(flashAgent) {
                         this.on('transaction-created', function(evt) {
-                            evt.data.transaction.add('flashes', flashAgent);
+                            flashAgent.initTransaction(evt.data.transaction);
                         });
                     })
                     .addSetup(function(flashes) {

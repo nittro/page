@@ -41,28 +41,25 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
 
         },
 
-        init: function(transaction, context) {
-            return {
+        initTransaction: function(transaction, context) {
+            var data = {
                 request: this._.ajax.createRequest(transaction.getUrl(), context.method, context.data)
             };
+
+            transaction.on('dispatch', function(evt) { evt.waitFor(this._dispatch(transaction, data)); }.bind(this));
+            transaction.on('abort', this._abort.bind(this, data));
         },
 
-        dispatch: function(transaction, data) {
-            return this._.ajax.dispatch(data.request)
-                .then(this._handleResponse.bind(this, transaction, data));
-
+        _dispatch: function(transaction, data) {
+            return this._.ajax.dispatch(data.request).then(this._handleResponse.bind(this, transaction, data));
         },
 
-        abort: function(transaction, data) {
+        _abort: function(data) {
             data.request.abort();
         },
 
-        handleAction: function(transaction, agent, action, actionData, data) {
-            // may return promise
-        },
-
         _handleResponse: function(transaction, data, response) {
-            return transaction.dispatchAgentAction('ajax', 'response', response)
+            return transaction.trigger('ajax-response', { response: response })
                 .then(function() {
                     var payload = response.getPayload();
 
@@ -74,15 +71,13 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
                         if ((!this._.options.whitelistRedirects ? payload.allowAjax !== false : payload.allowAjax) && this.checkUrl(payload.redirect)) {
                             transaction.setUrl(payload.redirect);
                             data.request = this._.ajax.createRequest(payload.redirect);
-                            return this.dispatch(transaction, data);
+                            return this._dispatch(transaction, data);
 
                         } else {
                             document.location.href = payload.redirect;
-
                         }
                     } else {
                         return data.request;
-
                     }
                 }.bind(this));
         }
