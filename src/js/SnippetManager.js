@@ -77,19 +77,26 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         cleanupDescendants: function(elem, changeset) {
-            var id, snippet;
+            var id, snippet,
+                snippets = changeset ? changeset.remove : {};
 
             for (id in this._.snippets) {
-                if (this._.snippets.hasOwnProperty(id) && !(id in changeset.remove)) {
+                if (this._.snippets.hasOwnProperty(id) && !(id in snippets)) {
                     snippet = this._.snippets[id].getElement();
 
                     if (snippet !== elem && DOM.contains(elem, snippet)) {
-                        changeset.remove[id] = {
+                        snippets[id] = {
                             element: snippet,
                             isDescendant: true
                         };
                     }
                 }
+            }
+
+            if (!changeset) {
+                this._runSnippetsPhase(snippets, Snippet.PREPARE_TEARDOWN);
+                this._runSnippetsPhase(snippets, Snippet.RUN_TEARDOWN);
+                this._runSnippetsPhase(snippets, Snippet.INACTIVE);
             }
         },
 
