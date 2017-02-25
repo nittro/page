@@ -76,13 +76,30 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
                 }.bind(this));
         },
 
+        cleanupDescendants: function(elem, changeset) {
+            var id, snippet;
+
+            for (id in this._.snippets) {
+                if (this._.snippets.hasOwnProperty(id) && !(id in changeset.remove)) {
+                    snippet = this._.snippets[id].getElement();
+
+                    if (snippet !== elem && DOM.contains(elem, snippet)) {
+                        changeset.remove[id] = {
+                            element: snippet,
+                            isDescendant: true
+                        };
+                    }
+                }
+            }
+        },
+
         _resolveRemovals: function(removeTargets, changeset) {
             removeTargets.forEach(function(elem) {
                 changeset.remove[elem.id] = {
                     element: elem
                 };
 
-                this._cleanupSnippet(elem, changeset);
+                this.cleanupDescendants(elem, changeset);
 
             }.bind(this));
         },
@@ -95,7 +112,7 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
                     elem = DOM.getById(id);
 
                     if (elem) {
-                        this._cleanupSnippet(elem, changeset);
+                        this.cleanupDescendants(elem, changeset);
 
                         if (id in changeset.remove) {
                             changeset.add[id] = this._resolveAddition(id, snippets[id]);
@@ -158,23 +175,6 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
                 content: elem,
                 container: params.id
             };
-        },
-
-        _cleanupSnippet: function(elem, changeset) {
-            var id, snippet;
-
-            for (id in this._.snippets) {
-                if (this._.snippets.hasOwnProperty(id) && !(id in changeset.remove)) {
-                    snippet = this._.snippets[id].getElement();
-
-                    if (snippet !== elem && DOM.contains(elem, snippet)) {
-                        changeset.remove[id] = {
-                            element: snippet,
-                            isDescendant: true
-                        };
-                    }
-                }
-            }
         },
 
         _runSnippetsPhase: function (snippets, phase) {
