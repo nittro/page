@@ -32,7 +32,7 @@ describe('Nittro.Page.Service', function () {
         testInstance = new Page(ajaxAgent, snippetAgent, historyAgent, snippetManager, history);
 
         testInstance.on('transaction-created', function (evt) {
-            evt.data.transaction.add(transitionAgent);
+            transitionAgent.initTransaction(evt.data.transaction, evt.data.context);
         });
 
         testContainer = document.createElement('div');
@@ -62,7 +62,7 @@ describe('Nittro.Page.Service', function () {
                 expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Response loaded');
                 done();
             }, function () {
-                done.fail('Response wasn\'t loaded');
+                done.fail('Response wasn\'t loaded: ');
             });
         });
     });
