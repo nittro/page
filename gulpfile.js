@@ -22,8 +22,8 @@ gulp.task('test', function () {
     return gulp.src(getNittroFiles(null, 'css'))
         .pipe(less())
         .pipe(addsrc.append(files, {base: process.cwd()}))
-        .pipe(jasmineBrowser.specRunner({console: false}))
-        .pipe(jasmineBrowser.server());
+        .pipe(jasmineBrowser.specRunner({console: true}))
+        .pipe(jasmineBrowser.headless());
 });
 
 gulp.task('default', ['test']);
