@@ -23,7 +23,8 @@ _context.invoke('Nittro.Page', function (DOM) {
 
             this.trigger('savestate', {
                 title: title,
-                url: url
+                url: url,
+                replace: true
             });
         },
 
