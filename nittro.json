@@ -11,6 +11,7 @@
             "src/js/TransitionAgent.js",
             "src/js/Transaction.js",
             "src/js/CspAgent.js",
+            "src/js/GoogleAnalyticsHelper.js",
             "src/js/Service.js"
         ],
         "css": [
