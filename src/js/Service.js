@@ -155,9 +155,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
         },
 
-        _checkUrl: function(url, current) {
-            return this._.ajaxAgent.checkUrl(url, current);
-
+        _checkUrl: function(url, current, ignoreHash) {
+            return this._.ajaxAgent.checkUrl(url, current, ignoreHash);
         },
 
         _checkLink: function (link) {

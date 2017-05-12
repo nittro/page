@@ -22,8 +22,8 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
             }
         },
 
-        checkUrl: function(url, current) {
-            if ((url + '').match(/^javascript:/)) {
+        checkUrl: function(url, current, ignoreHash) {
+            if ((url + '').match(/^(?!https?)[^:\/?#]+:/i)) {
                 return false;
             }
 
@@ -34,10 +34,14 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
                 return false;
             }
 
+            if (ignoreHash) {
+                return true;
+            }
+
             c = current ? Url.from(current) : Url.fromCurrent();
             d = u.compare(c);
 
-            return d === 0 || d > Url.PART.HASH;
+            return d !== Url.PART.HASH;
 
         },
 
