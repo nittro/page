@@ -16,8 +16,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
 
         initTransaction: function(transaction, context) {
             var data = {
-                elements: this._getTransitionTargets(context.element),
-                removeTargets: context.element ? this._getRemoveTargets(context.element) : []
+                elements: this._getTransitionTargets(context),
+                removeTargets: this._getRemoveTargets(context)
             };
 
             transaction.on('dispatch', this._dispatch.bind(this, data));
@@ -109,19 +109,23 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
                 }.bind(this));
         },
 
-        _getTransitionTargets: function(elem) {
-            var sel = elem ? DOM.getData(elem, 'transition') : undefined,
-                targets;
+        _getTransitionTargets: function(context) {
+            var sel, targets;
 
-            if (sel === undefined && (!elem || !DOM.getData(elem, 'dynamic-remove'))) {
+            if (context.transition !== undefined) {
+                sel = context.transition;
+            } else {
+                sel = context.element ? DOM.getData(context.element, 'transition') : undefined;
+            }
+
+            if (sel === undefined && (!context.element || !DOM.getData(context.element, 'dynamic-remove'))) {
                 sel = this._.options.defaultSelector;
-
             }
 
             targets = sel ? DOM.find(sel) : [];
 
             this.trigger('prepare-transition-targets', {
-                element: elem,
+                element: context.element,
                 targets: targets
             });
 
@@ -129,8 +133,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
 
         },
 
-        _getRemoveTargets: function (elem) {
-            var sel = DOM.getData(elem, 'dynamic-remove'),
+        _getRemoveTargets: function (context) {
+            if (!context.element) {
+                return [];
+            }
+
+            var sel = DOM.getData(context.element, 'dynamic-remove'),
                 targets = sel ? DOM.find(sel) : [];
 
             if (targets.length) {
