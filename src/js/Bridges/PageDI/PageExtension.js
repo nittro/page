@@ -9,6 +9,7 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 whitelistLinks: false,
                 whitelistRedirects: false,
                 allowOrigins: null,
+                backgroundErrors: false,
                 csp: null,
                 transitions: {
                     defaultSelector: '.nittro-transition-auto'
@@ -27,7 +28,8 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 factory: 'Nittro.Page.Service()',
                 args: {
                     options: {
-                        whitelistLinks: config.whitelistLinks
+                        whitelistLinks: config.whitelistLinks,
+                        backgroundErrors: config.backgroundErrors
                     }
                 },
                 run: true

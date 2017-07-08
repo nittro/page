@@ -42,7 +42,7 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
         },
 
         _saveState: function (transaction, data) {
-            if (transaction.getUrl().getOrigin() !== Url.fromCurrent().getOrigin()) {
+            if (transaction.getUrl().getOrigin() !== Url.fromCurrent().getOrigin() || transaction.isBackground()) {
                 transaction.setIsHistoryState(false);
 
             } else if (transaction.isHistoryState()) {

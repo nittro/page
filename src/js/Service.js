@@ -21,7 +21,8 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
     }, {
         STATIC: {
             defaults: {
-                whitelistLinks: false
+                whitelistLinks: false,
+                backgroundErrors: false
             }
         },
 
@@ -128,6 +129,7 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         _createTransaction: function(url, context) {
             var transaction = new Transaction(url);
 
+            this._initTransaction(transaction, context);
             this._.ajaxAgent.initTransaction(transaction, context);
             this._.snippetAgent.initTransaction(transaction, context);
             this._.historyAgent.initTransaction(transaction, context);
@@ -141,16 +143,26 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
         },
 
-        _dispatchTransaction: function(transaction) {
-            if (this._.currentTransaction) {
-                this._.currentTransaction.abort();
+        _initTransaction: function (transaction, context) {
+            if ('background' in context) {
+                transaction.setIsBackground(context.background);
+            } else if (context.element) {
+                transaction.setIsBackground(DOM.getData(context.element, 'background', false));
             }
+        },
 
-            this._.currentTransaction = transaction;
+        _dispatchTransaction: function(transaction) {
+            if (!transaction.isBackground()) {
+                if (this._.currentTransaction) {
+                    this._.currentTransaction.abort();
+                }
+
+                this._.currentTransaction = transaction;
+            }
 
             return transaction.dispatch().then(
                 this._handleSuccess.bind(this, transaction),
-                this._handleError.bind(this)
+                this._handleError.bind(this, transaction)
             );
 
         },
@@ -169,7 +181,9 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         },
 
         _handleSuccess: function(transaction) {
-            this._.currentTransaction = null;
+            if (!transaction.isBackground()) {
+                this._.currentTransaction = null;
+            }
 
             if (transaction.isHistoryState()) {
                 this._.currentUrl = transaction.getUrl();
@@ -177,9 +191,14 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             }
         },
 
-        _handleError: function (err) {
-            this._.currentTransaction = null;
-            this.trigger('error', err);
+        _handleError: function (transaction, err) {
+            if (transaction === this._.currentTransaction) {
+                this._.currentTransaction = null;
+            }
+
+            if (!transaction.isBackground() || this._.options.backgroundErrors) {
+                this.trigger('error', err);
+            }
         }
     });
 
