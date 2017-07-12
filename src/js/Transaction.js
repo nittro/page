@@ -1,11 +1,11 @@
-_context.invoke('Nittro.Page', function(Url, undefined) {
+_context.invoke('Nittro.Page', function(Url) {
 
     var Transaction = _context.extend('Nittro.Object', function (url) {
         Transaction.Super.call(this);
 
         this._.url = Url.from(url);
         this._.history = true;
-        this._.background = true;
+        this._.background = false;
 
         this._.promise = new Promise(function(fulfill, reject) {
             this._.fulfill = fulfill;

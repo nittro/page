@@ -53,13 +53,57 @@ describe('Nittro.Page.Service', function () {
         it('should load an URL', function (done) {
             var payload = {
                 snippets: {
-                    'snippet-test': '<h2>Response loaded</h2><a href="/bar" id="test-link" data-transition="#snippet-test">Test link</a>'
+                    'snippet-test': '<h2>Response loaded</h2><a href="/test-openLink" id="test-link" data-transition="#snippet-test">Test link</a>'
                 }
             };
-            mockAjax.requests.push(new MockRequest('/foo', 'GET', {}, { payload: payload }));
+            mockAjax.requests.push(new MockRequest('/test-open-1', 'GET', {}, { payload: payload }));
 
-            testInstance.open('/foo').then(function () {
+            testInstance.open('/test-open-1').then(function () {
                 expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Response loaded');
+                done();
+            }, function () {
+                done.fail('Response wasn\'t loaded: ');
+            });
+        });
+
+        it('should update the browser history by default', function (done) {
+            mockAjax.requests.push(new MockRequest('/test-open-2', 'GET', {}, {}));
+
+            testInstance.open('/test-open-2').then(function () {
+                expect(document.location.href).toMatch(/\/test-open-2$/);
+                done();
+            }, function () {
+                done.fail('Response wasn\'t loaded: ');
+            });
+        });
+
+        it('should respect the "postGet" flag in payload when updating history', function (done) {
+            mockAjax.requests.push(new MockRequest('/test-open-3', 'GET', {}, { payload: { postGet: true, url: '/test-open-3-pg' } }));
+
+            testInstance.open('/test-open-3').then(function () {
+                expect(document.location.href).toMatch(/\/test-open-3-pg$/);
+                done();
+            }, function () {
+                done.fail('Response wasn\'t loaded: ');
+            });
+        });
+
+        it('should not update the browser history if the "history" option is set to false', function (done) {
+            mockAjax.requests.push(new MockRequest('/test-open-4', 'GET', { history: false }, {}));
+
+            testInstance.open('/test-open-4').then(function () {
+                expect(document.location.href).toMatch(/\/test-open-3-pg$/);
+                done();
+            }, function () {
+                done.fail('Response wasn\'t loaded: ');
+            });
+        });
+
+        it('should not update the browser history if the request is a background request', function (done) {
+            mockAjax.requests.push(new MockRequest('/test-open-5', 'GET', { background: false }, {}));
+
+            testInstance.open('/test-open-5').then(function () {
+                expect(document.location.href).toMatch(/\/test-open-3-pg$/);
                 done();
             }, function () {
                 done.fail('Response wasn\'t loaded: ');
@@ -75,7 +119,7 @@ describe('Nittro.Page.Service', function () {
                 }
             };
 
-            mockAjax.requests.push(new MockRequest('/bar', 'GET', {}, { payload: payload }));
+            mockAjax.requests.push(new MockRequest('/test-openLink', 'GET', {}, { payload: payload }));
 
             testInstance.openLink(document.getElementById('test-link'))
                 .then(function () {
