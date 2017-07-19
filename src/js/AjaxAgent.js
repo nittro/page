@@ -55,7 +55,9 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
         },
 
         _dispatch: function(transaction, data) {
-            return this._.ajax.dispatch(data.request).then(this._handleResponse.bind(this, transaction, data));
+            return transaction.trigger('ajax-request', { request: data.request })
+                .then(this._.ajax.dispatch.bind(this._.ajax, data.request))
+                .then(this._handleResponse.bind(this, transaction, data));
         },
 
         _abort: function(data) {
