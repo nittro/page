@@ -11,8 +11,15 @@ _context.invoke('Nittro.Page', function(Url) {
             this._.fulfill = fulfill;
             this._.reject = reject;
         }.bind(this));
-
     }, {
+        STATIC: {
+            createRejected: function (url, reason) {
+                var self = new Transaction(url);
+                self._.reject(reason);
+                return self;
+            }
+        },
+
         getUrl: function() {
             return this._.url;
         },
@@ -42,17 +49,15 @@ _context.invoke('Nittro.Page', function(Url) {
 
         dispatch: function() {
             this.trigger('dispatch')
-                .then(this._.fulfill.bind(this), this._.reject.bind(this));
+                .then(this._.fulfill, this._.reject);
 
             return this;
-
         },
 
         abort: function() {
             this._.reject({type: 'abort'});
             this.trigger('abort');
             return this;
-
         },
 
         then: function(onfulfilled, onrejected) {

@@ -30,7 +30,7 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
         },
 
         _dispatch: function (data, evt) {
-            evt.target.then(this._saveState.bind(this, evt.target, data));
+            evt.target.then(this._saveState.bind(this, evt.target, data), function () { /* noop on transaction error */ });
         },
 
         _handleResponse: function (data, evt) {

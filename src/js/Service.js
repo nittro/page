@@ -38,21 +38,20 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 });
 
                 if (evt.isDefaultPrevented()) {
-                    return Promise.reject({type: 'abort'});
+                    return this._createRejectedTransaction(url, {type: 'abort'});
                 }
 
                 context.event && context.event.preventDefault();
 
                 return evt.then(function () {
                     if (evt.isDefaultPrevented()) {
-                        return Promise.reject({type: 'abort'});
+                        return this._createRejectedTransaction(url, {type: 'abort'});
                     } else {
                         return this._createTransaction(url, context);
                     }
                 }.bind(this));
             } catch (e) {
-                return Promise.reject(e);
-
+                return this._createRejectedTransaction(url, e);
             }
         },
 
@@ -76,19 +75,15 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         _handleState: function (evt) {
             if (!this._checkUrl(null, this._.currentUrl)) {
                 return;
-
             }
 
             var url = Url.from(evt.data.url);
             this._.currentUrl = url;
 
-            try {
-                this.open(url, 'get', null, {history: false});
-
-            } catch (e) {
-                document.location.href = url.toAbsolute();
-
-            }
+            this.open(url, 'get', null, {history: false})
+                .then(null, function () {
+                    document.location.href = url.toAbsolute();
+                });
         },
 
         _checkReady: function () {
@@ -123,7 +118,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             }
 
             this.openLink(link, evt);
-
         },
 
         _createTransaction: function(url, context) {
@@ -141,6 +135,11 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
             return this._dispatchTransaction(transaction);
 
+        },
+
+        _createRejectedTransaction: function (url, reason) {
+            var transaction = Transaction.createRejected(url, reason);
+            return transaction.then(null, this._handleError.bind(this, transaction));
         },
 
         _initTransaction: function (transaction, context) {
@@ -164,7 +163,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 this._handleSuccess.bind(this, transaction),
                 this._handleError.bind(this, transaction)
             );
-
         },
 
         _checkUrl: function(url, current, ignoreHash) {
@@ -177,7 +175,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             }
 
             return DOM.getData(link, 'ajax', !this._.options.whitelistLinks);
-
         },
 
         _handleSuccess: function(transaction) {
@@ -187,7 +184,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
             if (transaction.isHistoryState()) {
                 this._.currentUrl = transaction.getUrl();
-
             }
         },
 
