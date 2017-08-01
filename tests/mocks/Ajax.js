@@ -6,6 +6,7 @@ _context.invoke('Mocks.Ajax', function () {
         response || (response = {});
         this.response = new Response();
         this.response.setResponse(response.status || 200, response.payload || {}, response.headers || {});
+        this.setResponse(this.response);
 
     }, {});
 
@@ -69,37 +70,31 @@ _context.invoke('Mocks.Ajax', function () {
         },
 
         dispatch: function (request) {
-            var promise, abort = function() {};
+            function abort() {
+                request.setRejected({
+                    type: 'abort',
+                    status: null,
+                    request: request
+                });
+            }
 
-            promise = new Promise(function (fulfill, reject) {
-                var response = request.response;
-
-                abort = function () {
-                    reject({
-                        type: 'abort',
-                        status: null,
-                        request: request
-                    });
-                };
-
-                function resolve() {
-                    if (response.options.fail) {
-                        reject(response);
-                    } else {
-                        fulfill(response);
-                    }
-                }
-
-                if (response.options.delay) {
-                    window.setTimeout(resolve, response.options.delay);
+            function resolve() {
+                if (request.response.options.fail) {
+                    request.setRejected(request.response);
                 } else {
-                    resolve();
+                    request.setFulfilled();
                 }
-            }.bind(this));
+            }
 
-            request.setDispatched(promise, abort);
+            request.setDispatched(abort);
 
-            return promise;
+            if (request.response.options.delay) {
+                window.setTimeout(resolve, request.response.options.delay);
+            } else {
+                resolve();
+            }
+
+            return request;
         }
     };
 
