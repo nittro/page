@@ -38,14 +38,14 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
                 });
 
                 if (evt.isDefaultPrevented()) {
-                    return Promise.reject();
+                    return Promise.reject({type: 'abort'});
                 }
 
                 context.event && context.event.preventDefault();
 
                 return evt.then(function () {
                     if (evt.isDefaultPrevented()) {
-                        return Promise.reject();
+                        return Promise.reject({type: 'abort'});
                     } else {
                         return this._createTransaction(url, context);
                     }
