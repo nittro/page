@@ -170,11 +170,7 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
         },
 
         _checkLink: function (link) {
-            if (link.getAttribute('target')) {
-                return false;
-            }
-
-            return DOM.getData(link, 'ajax', !this._.options.whitelistLinks);
+            return !link.hasAttribute('target') && link.hasAttribute('href') && DOM.getData(link, 'ajax', !this._.options.whitelistLinks);
         },
 
         _handleSuccess: function(transaction) {
