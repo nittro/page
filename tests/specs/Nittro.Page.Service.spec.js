@@ -160,6 +160,33 @@ describe('Nittro.Page.Service', function () {
                 done.fail('Response wasn\'t loaded');
             });
         });
+
+        it('should log an error if no matching container is found', function (done) {
+            testContainer.innerHTML =
+                '<div id="snippet-test-dynamic" class="nittro-snippet-container" data-dynamic-mask="snippet-dynamic-\\d+"></div>'
+                + '<div id="snippet-test-static"></div>'
+            ;
+
+            var payload = {
+                snippets: {
+                    'snippet-dummy-1': 'Dummy dynamic snippet with no matching container',
+                    'snippet-test-static': 'Static snippet which should be updated regardless'
+                }
+            };
+
+            spyOn(console, 'error');
+
+            mockAjax.requests.push(new MockRequest('/dynamic', 'GET', {}, { payload: payload }));
+
+            testInstance.open('/dynamic').then(function () {
+                expect(testContainer.querySelectorAll('#snippet-test-dynamic > div').length).toBe(0);
+                expect(testContainer.querySelector('#snippet-test-static').textContent).toBe(payload.snippets['snippet-test-static']);
+                expect(console.error).toHaveBeenCalledWith('Dynamic snippet #snippet-dummy-1 has no container');
+                done();
+            }, function () {
+                done.fail('Response wasn\'t loaded');
+            });
+        });
     });
 
 });

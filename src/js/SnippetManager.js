@@ -112,7 +112,7 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         _resolveUpdates: function(snippets, changeset) {
-            var id, elem;
+            var id, elem, params;
 
             for (id in snippets) {
                 if (snippets.hasOwnProperty(id)) {
@@ -121,15 +121,15 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
                     if (elem) {
                         this.cleanupDescendants(elem, changeset);
 
-                        if (id in changeset.remove) {
-                            changeset.add[id] = this._resolveAddition(id, snippets[id]);
+                        if (id in changeset.remove && (params = this._resolveAddition(id, snippets[id]))) {
+                            changeset.add[id] = params;
 
                         } else {
                             changeset.update[id] = this._resolveUpdate(elem, snippets[id]);
 
                         }
-                    } else {
-                        changeset.add[id] = this._resolveAddition(id, snippets[id]);
+                    } else if (params = this._resolveAddition(id, snippets[id])) {
+                        changeset.add[id] = params;
 
                     }
                 }
@@ -174,8 +174,13 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
 
         _resolveAddition: function(id, content) {
             var params = this._getDynamicContainerParamsForId(id),
-                elem = Helpers.buildContent(params.element, content);
+                elem;
 
+            if (!params) {
+                return null;
+            }
+
+            elem = Helpers.buildContent(params.element, content);
             elem.id = id;
 
             return {
@@ -296,8 +301,11 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
                 }
             }
 
-            throw new Error('Dynamic snippet #' + id + ' has no container');
+            if (window.console) {
+                console.error('Dynamic snippet #' + id + ' has no container');
+            }
 
+            return null;
         }
     });
 
