@@ -51,7 +51,7 @@ _context.invoke('Nittro.Page', function(Arrays) {
                     }
 
                     if ('redirect' in payload) {
-                        if ((!this._.options.whitelistRedirects ? payload.allowAjax !== false : payload.allowAjax) && this.checkUrl(payload.redirect)) {
+                        if ((!this._.options.whitelistRedirects ? payload.allowAjax !== false : payload.allowAjax) && this._.ajax.isAllowedOrigin(payload.redirect)) {
                             transaction.setUrl(payload.redirect);
                             data.request = this._.ajax.createRequest(payload.redirect);
                             return this._dispatch(transaction, data);
