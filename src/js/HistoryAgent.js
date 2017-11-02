@@ -1,10 +1,13 @@
 _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
 
-    var HistoryAgent = _context.extend(function(history, options) {
+    var HistoryAgent = _context.extend(function(page, history, options) {
         this._ = {
+            page: page,
             history: history,
             options: Arrays.mergeTree({}, HistoryAgent.defaults, options)
         };
+
+        this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
         STATIC: {
             defaults: {
@@ -12,21 +15,21 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
             }
         },
 
-        initTransaction: function (transaction, context) {
-            if ('history' in context) {
-                transaction.setIsHistoryState(context.history);
-            } else if (context.element) {
-                transaction.setIsHistoryState(DOM.getData(context.element, 'history', !this._.options.whitelistHistory));
+        _initTransaction: function (evt) {
+            if ('history' in evt.data.context) {
+                evt.data.transaction.setIsHistoryState(evt.data.context.history);
+            } else if (evt.data.context.element) {
+                evt.data.transaction.setIsHistoryState(DOM.getData(evt.data.context.element, 'history', !this._.options.whitelistHistory));
             } else {
-                transaction.setIsHistoryState(!this._.options.whitelistHistory);
+                evt.data.transaction.setIsHistoryState(!this._.options.whitelistHistory);
             }
 
             var data = {
                 title: document.title
             };
 
-            transaction.on('dispatch', this._dispatch.bind(this, data));
-            transaction.on('ajax-response', this._handleResponse.bind(this, data));
+            evt.data.transaction.on('dispatch', this._dispatch.bind(this, data));
+            evt.data.transaction.on('ajax-response', this._handleResponse.bind(this, data));
         },
 
         _dispatch: function (data, evt) {

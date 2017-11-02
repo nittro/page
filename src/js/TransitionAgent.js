@@ -1,12 +1,14 @@
 _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined) {
 
-    var TransitionAgent = _context.extend('Nittro.Object', function(options) {
+    var TransitionAgent = _context.extend('Nittro.Object', function(page, options) {
         TransitionAgent.Super.call(this);
 
+        this._.page = page;
+        this._.options = Arrays.mergeTree({}, TransitionAgent.defaults, options);
         this._.ready = true;
         this._.queue = [];
-        this._.options = Arrays.mergeTree({}, TransitionAgent.defaults, options);
 
+        this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
         STATIC: {
             defaults: {
@@ -14,15 +16,15 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
             }
         },
 
-        initTransaction: function(transaction, context) {
+        _initTransaction: function(evt) {
             var data = {
-                elements: this._getTransitionTargets(context),
-                removeTargets: this._getRemoveTargets(context)
+                elements: this._getTransitionTargets(evt.data.context),
+                removeTargets: this._getRemoveTargets(evt.data.context)
             };
 
-            transaction.on('dispatch', this._dispatch.bind(this, data));
-            transaction.on('abort', this._abort.bind(this, data));
-            transaction.on('snippets-apply', this._handleSnippets.bind(this, data));
+            evt.data.transaction.on('dispatch', this._dispatch.bind(this, data));
+            evt.data.transaction.on('abort', this._abort.bind(this, data));
+            evt.data.transaction.on('snippets-apply', this._handleSnippets.bind(this, data));
         },
 
         _dispatch: function(data, evt) {

@@ -1,57 +1,34 @@
-_context.invoke('Nittro.Page', function(Arrays, Url) {
+_context.invoke('Nittro.Page', function(Arrays) {
 
-    var AjaxAgent = _context.extend(function(ajax, options) {
+    var AjaxAgent = _context.extend(function(page, ajax, options) {
         this._ = {
+            page: page,
             ajax: ajax,
             options: Arrays.mergeTree({}, AjaxAgent.defaults, options)
         };
 
-        if (!this._.options.allowOrigins) {
-            this._.options.allowOrigins = [];
-        } else if (!Array.isArray(this._.options.allowOrigins)) {
-            this._.options.allowOrigins = this._.options.allowOrigins.split(/\s*,\s*/g);
-        }
-
-        this._.options.allowOrigins.push(Url.fromCurrent().getOrigin());
-
+        this._.page.on('before-transaction', this._checkTransaction.bind(this));
+        this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
         STATIC: {
             defaults: {
-                whitelistRedirects: false,
-                allowOrigins: null
+                whitelistRedirects: false
             }
         },
 
-        checkUrl: function(url, current, ignoreHash) {
-            if ((url + '').match(/^(?!https?)[^:\/?#]+:/i)) {
-                return false;
+        _checkTransaction: function (evt) {
+            if (!this._.ajax.isAllowedOrigin(evt.data.url) || !this._.ajax.supports(evt.data.url, evt.data.context.method, evt.data.context.data)) {
+                evt.preventDefault();
             }
-
-            var u = url ? Url.from(url) : Url.fromCurrent(),
-                c, d;
-
-            if (this._.options.allowOrigins.indexOf(u.getOrigin()) === -1) {
-                return false;
-            }
-
-            if (ignoreHash) {
-                return true;
-            }
-
-            c = current ? Url.from(current) : Url.fromCurrent();
-            d = u.compare(c);
-
-            return d !== Url.PART.HASH;
-
         },
 
-        initTransaction: function(transaction, context) {
+        _initTransaction: function(evt) {
             var data = {
-                request: this._.ajax.createRequest(transaction.getUrl(), context.method, context.data)
+                request: this._.ajax.createRequest(evt.data.transaction.getUrl(), evt.data.context.method, evt.data.context.data)
             };
 
-            transaction.on('dispatch', function(evt) { evt.waitFor(this._dispatch(transaction, data)); }.bind(this));
-            transaction.on('abort', this._abort.bind(this, data));
+            evt.data.transaction.on('dispatch', function(evt) { evt.waitFor(this._dispatch(evt.target, data)); }.bind(this));
+            evt.data.transaction.on('abort', this._abort.bind(this, data));
         },
 
         _dispatch: function(transaction, data) {
@@ -92,6 +69,5 @@ _context.invoke('Nittro.Page', function(Arrays, Url) {
     _context.register(AjaxAgent, 'AjaxAgent');
 
 }, {
-    Arrays: 'Utils.Arrays',
-    Url: 'Utils.Url'
+    Arrays: 'Utils.Arrays'
 });

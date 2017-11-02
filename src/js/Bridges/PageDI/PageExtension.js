@@ -8,7 +8,6 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 whitelistHistory: false,
                 whitelistLinks: false,
                 whitelistRedirects: false,
-                allowOrigins: null,
                 backgroundErrors: false,
                 csp: null,
                 transitions: {
@@ -39,10 +38,10 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 factory: 'Nittro.Page.AjaxAgent()',
                 args: {
                     options: {
-                        whitelistRedirects: config.whitelistRedirects,
-                        allowOrigins: config.allowOrigins
+                        whitelistRedirects: config.whitelistRedirects
                     }
-                }
+                },
+                run: true
             });
 
             builder.addServiceDefinition('historyAgent', {
@@ -51,13 +50,17 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                     options: {
                         whitelistHistory: config.whitelistHistory
                     }
-                }
+                },
+                run: true
             });
 
-            builder.addServiceDefinition('snippetAgent', 'Nittro.Page.SnippetAgent()');
+            builder.addServiceDefinition('snippetAgent', 'Nittro.Page.SnippetAgent()!');
             builder.addServiceDefinition('snippetManager', 'Nittro.Page.SnippetManager()');
             builder.addServiceDefinition('history', 'Nittro.Page.History()');
-            builder.addServiceDefinition('googleAnalyticsHelper', 'Nittro.Page.GoogleAnalyticsHelper()!');
+
+            if (typeof window.ga === 'function') {
+                builder.addServiceDefinition('googleAnalyticsHelper', 'Nittro.Page.GoogleAnalyticsHelper()!');
+            }
 
             if (config.transitions) {
                 builder.addServiceDefinition('transitionAgent', {
@@ -66,15 +69,9 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                         options: {
                             defaultSelector: config.transitions.defaultSelector
                         }
-                    }
+                    },
+                    run: true
                 });
-
-                builder.getServiceDefinition('page')
-                    .addSetup(function(transitionAgent) {
-                        this.on('transaction-created', function(evt) {
-                            transitionAgent.initTransaction(evt.data.transaction, evt.data.context);
-                        });
-                    });
             }
 
             if (config.csp !== false) {
@@ -85,15 +82,9 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                         factory: 'Nittro.Page.CspAgent()',
                         args: {
                             nonce: nonce
-                        }
+                        },
+                        run: true
                     });
-
-                    builder.getServiceDefinition('page')
-                        .addSetup(function(cspAgent) {
-                            this.on('transaction-created', function(evt) {
-                                cspAgent.initTransaction(evt.data.transaction);
-                            });
-                        });
                 }
             }
         },
@@ -103,14 +94,9 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 config = this._getConfig();
 
             if (builder.hasServiceDefinition('flashes')) {
-                builder.addServiceDefinition('flashAgent', 'Nittro.Page.Bridges.PageFlashes.FlashAgent()');
+                builder.addServiceDefinition('flashAgent', 'Nittro.Page.Bridges.PageFlashes.FlashAgent()!');
 
                 builder.getServiceDefinition('page')
-                    .addSetup(function(flashAgent) {
-                        this.on('transaction-created', function(evt) {
-                            flashAgent.initTransaction(evt.data.transaction);
-                        });
-                    })
                     .addSetup(function(flashes) {
                         this.on('error:default', function (evt) {
                             if (evt.data.type === 'connection') {

@@ -23,17 +23,13 @@ describe('Nittro.Page.Service', function () {
         MockRequest = _context.lookup('Mocks.Ajax.Request');
 
         snippetManager = new SnippetManager();
-        snippetAgent = new SnippetAgent(snippetManager);
-        mockAjax = new Ajax();
-        ajaxAgent = new AjaxAgent(mockAjax);
         history = new History();
-        historyAgent = new HistoryAgent(history);
-        transitionAgent = new TransitionAgent();
-        testInstance = new Page(ajaxAgent, snippetAgent, historyAgent, snippetManager, history);
-
-        testInstance.on('transaction-created', function (evt) {
-            transitionAgent.initTransaction(evt.data.transaction, evt.data.context);
-        });
+        testInstance = new Page(snippetManager, history);
+        snippetAgent = new SnippetAgent(testInstance, snippetManager);
+        mockAjax = new Ajax();
+        ajaxAgent = new AjaxAgent(testInstance, mockAjax);
+        historyAgent = new HistoryAgent(testInstance, history);
+        transitionAgent = new TransitionAgent(testInstance);
 
         testContainer = document.createElement('div');
         document.body.appendChild(testContainer);
@@ -61,8 +57,8 @@ describe('Nittro.Page.Service', function () {
             testInstance.open('/test-open-1').then(function () {
                 expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Response loaded');
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded: ');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
 
@@ -72,8 +68,8 @@ describe('Nittro.Page.Service', function () {
             testInstance.open('/test-open-2').then(function () {
                 expect(document.location.href).toMatch(/\/test-open-2$/);
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded: ');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
 
@@ -83,8 +79,8 @@ describe('Nittro.Page.Service', function () {
             testInstance.open('/test-open-3').then(function () {
                 expect(document.location.href).toMatch(/\/test-open-3-pg$/);
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded: ');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
 
@@ -94,8 +90,8 @@ describe('Nittro.Page.Service', function () {
             testInstance.open('/test-open-4').then(function () {
                 expect(document.location.href).toMatch(/\/test-open-3-pg$/);
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded: ');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
 
@@ -105,8 +101,8 @@ describe('Nittro.Page.Service', function () {
             testInstance.open('/test-open-5').then(function () {
                 expect(document.location.href).toMatch(/\/test-open-3-pg$/);
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded: ');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
     });
@@ -132,8 +128,8 @@ describe('Nittro.Page.Service', function () {
                         expect(testContainer.querySelector('#snippet-test > h2').textContent).toBe('Another one bites the dust');
                         done();
                     }, 100);
-                }, function () {
-                    done.fail('Response wasn\'t loaded');
+                }, function (e) {
+                    done.fail('Response wasn\'t loaded: ' + e);
                 });
 
         });
@@ -156,8 +152,8 @@ describe('Nittro.Page.Service', function () {
             testInstance.open('/dynamic').then(function () {
                 expect(testContainer.querySelectorAll('#snippet-test-dynamic > div').length).toBe(3);
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
 
@@ -183,8 +179,8 @@ describe('Nittro.Page.Service', function () {
                 expect(testContainer.querySelector('#snippet-test-static').textContent).toBe(payload.snippets['snippet-test-static']);
                 expect(console.error).toHaveBeenCalledWith('Dynamic snippet #snippet-dummy-1 has no container');
                 done();
-            }, function () {
-                done.fail('Response wasn\'t loaded');
+            }, function (e) {
+                done.fail('Response wasn\'t loaded: ' + e);
             });
         });
     });

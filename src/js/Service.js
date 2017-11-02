@@ -1,11 +1,8 @@
 _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
-    var Service = _context.extend('Nittro.Object', function (ajaxAgent, snippetAgent, historyAgent, snippetManager, history, options) {
+    var Service = _context.extend('Nittro.Object', function (snippetManager, history, options) {
         Service.Super.call(this);
 
-        this._.ajaxAgent = ajaxAgent;
-        this._.snippetAgent = snippetAgent;
-        this._.historyAgent = historyAgent;
         this._.snippetManager = snippetManager;
         this._.history = history;
         this._.options = Arrays.mergeTree({}, Service.defaults, options);
@@ -124,9 +121,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             var transaction = new Transaction(url);
 
             this._initTransaction(transaction, context);
-            this._.ajaxAgent.initTransaction(transaction, context);
-            this._.snippetAgent.initTransaction(transaction, context);
-            this._.historyAgent.initTransaction(transaction, context);
 
             this.trigger('transaction-created', {
                 transaction: transaction,
@@ -165,8 +159,10 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             );
         },
 
-        _checkUrl: function(url, current, ignoreHash) {
-            return this._.ajaxAgent.checkUrl(url, current, ignoreHash);
+        _checkUrl: function(url, current) {
+            url = url ? Url.from(url) : Url.fromCurrent();
+            current = current ? Url.from(current) : Url.fromCurrent();
+            return url.compare(current) !== Url.PART.HASH;
         },
 
         _checkLink: function (link) {

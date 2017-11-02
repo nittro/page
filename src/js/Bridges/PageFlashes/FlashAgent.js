@@ -1,14 +1,16 @@
 _context.invoke('Nittro.Page.Bridges.PageFlashes', function () {
 
-    var FlashAgent = _context.extend(function(flashes) {
+    var FlashAgent = _context.extend(function(page, flashes) {
         this._ = {
+            page: page,
             flashes: flashes
         };
 
         this._handleResponse = this._handleResponse.bind(this);
+        this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
-        initTransaction: function (transaction) {
-            transaction.on('ajax-response', this._handleResponse);
+        _initTransaction: function (evt) {
+            evt.data.transaction.on('ajax-response', this._handleResponse);
         },
 
         _handleResponse: function (evt) {

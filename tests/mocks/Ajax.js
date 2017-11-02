@@ -35,6 +35,14 @@ _context.invoke('Mocks.Ajax', function () {
     };
 
     Service.prototype = {
+        isAllowedOrigin: function (url) {
+            return true;
+        },
+
+        supports: function (url, method, data) {
+            return true;
+        },
+
         'get': function (url, data) {
             return this.dispatch(this.createRequest(url, 'GET', data));
         },

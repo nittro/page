@@ -1,16 +1,19 @@
 _context.invoke('Nittro.Page', function() {
 
-    var SnippetAgent = _context.extend(function(snippetManager) {
+    var SnippetAgent = _context.extend(function(page, snippetManager) {
         this._ = {
+            page: page,
             snippetManager: snippetManager
         };
+
+        this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
-        initTransaction: function(transaction, context) {
+        _initTransaction: function(evt) {
             var data = {
-                removeTargets: context.element ? this._.snippetManager.getRemoveTargets(context.element) : []
+                removeTargets: evt.data.context.element ? this._.snippetManager.getRemoveTargets(evt.data.context.element) : []
             };
 
-            transaction.on('ajax-response', this._handleResponse.bind(this, data));
+            evt.data.transaction.on('ajax-response', this._handleResponse.bind(this, data));
         },
 
         _handleResponse: function(data, evt) {

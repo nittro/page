@@ -1,18 +1,21 @@
 _context.invoke('Nittro.Page', function () {
 
-    var CspAgent = _context.extend(function(nonce) {
+    var CspAgent = _context.extend(function(page, nonce) {
         this._ = {
+            page: page,
             nonce: nonce
         };
+
+        this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
-        initTransaction: function (transaction) {
+        _initTransaction: function (evt) {
             var data = {
                 nonce: null,
                 pending: null
             };
 
-            transaction.on('ajax-response', this._handleResponse.bind(this, data));
-            transaction.on('snippets-apply', this._handleSnippets.bind(this, data));
+            evt.data.transaction.on('ajax-response', this._handleResponse.bind(this, data));
+            evt.data.transaction.on('snippets-apply', this._handleSnippets.bind(this, data));
         },
 
         _handleResponse: function (data, evt) {
