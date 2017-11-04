@@ -96,13 +96,36 @@ describe('Nittro.Page.Service', function () {
         });
 
         it('should not update the browser history if the request is a background request', function (done) {
-            mockAjax.requests.push(new MockRequest('/test-open-5', 'GET', { background: false }, {}));
+            mockAjax.requests.push(new MockRequest('/test-open-5', 'GET', { background: true }, {}));
 
             testInstance.open('/test-open-5').then(function () {
                 expect(document.location.href).toMatch(/\/test-open-3-pg$/);
                 done();
             }, function (e) {
                 done.fail('Response wasn\'t loaded: ' + e);
+            });
+        });
+
+        it('should support saving arbitrary data with history states', function (done) {
+            history.replace(document.location.href, document.title, {myData: { foo: 1, bar: 'a' }});
+
+            mockAjax.requests.push(new MockRequest('/test-open-6', 'GET', {}, { payload: {  } }));
+            mockAjax.requests.push(new MockRequest('/test-open-3-pg', 'GET', {}));
+
+            testInstance.open('/test-open-6').then(function () {
+                expect(document.location.href).toMatch(/\/test-open-6$/);
+            }).then(function() {
+                history.on('popstate.test-open-6', function (evt) {
+                    history.off('.test-open-6');
+                    expect(document.location.href).toMatch(/\/test-open-3-pg$/);
+                    expect(evt.data.data).toEqual({myData: { foo: 1, bar: 'a' }});
+                    done();
+                });
+
+                window.history.go(-1);
+            }).then(null, function(e) {
+                history.off('.test-open-6');
+                done.fail(e);
             });
         });
     });

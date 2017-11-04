@@ -7,35 +7,46 @@ _context.invoke('Nittro.Page', function (DOM) {
         DOM.addListener(window, 'popstate', this._handleState.bind(this));
 
     }, {
-        push: function (url, title) {
-            window.history.pushState({_nittro: true}, title || document.title, url);
-            title && (document.title = title);
+        push: function (url, title, data) {
+            data || (data = {});
 
-            this.trigger('savestate', {
-                title: title,
-                url: url
-            });
-        },
+            this.trigger('before-savestate', data);
 
-        replace: function (url, title) {
-            window.history.replaceState({_nittro: true}, title || document.title, url);
+            window.history.pushState({_nittro: true, data: data}, title || document.title, url);
             title && (document.title = title);
 
             this.trigger('savestate', {
                 title: title,
                 url: url,
+                data: data
+            });
+        },
+
+        replace: function (url, title, data) {
+            data || (data = {});
+
+            this.trigger('before-savestate', data);
+
+            window.history.replaceState({_nittro: true, data: data}, title || document.title, url);
+            title && (document.title = title);
+
+            this.trigger('savestate', {
+                title: title,
+                url: url,
+                data: data,
                 replace: true
             });
         },
 
         _handleState: function (evt) {
-            if (evt.state === null) {
+            if (!evt.state || !evt.state._nittro) {
                 return;
             }
 
             this.trigger('popstate', {
                 title: document.title,
-                url: location.href
+                url: location.href,
+                data: evt.state.data
             });
         }
     });
