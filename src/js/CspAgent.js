@@ -74,7 +74,7 @@ _context.invoke('Nittro.Page', function () {
                 i;
 
             for (i = 0; i < scripts.length; i++) {
-                if (scripts.item(i).getAttribute('nonce') === nonce) {
+                if (scripts.item(i).nonce === nonce) {
                     scripts.item(i).setAttribute('nonce', this._.nonce || '');
                 }
             }

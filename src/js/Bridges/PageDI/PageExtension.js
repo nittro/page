@@ -75,7 +75,15 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
             }
 
             if (config.csp !== false) {
-                var nonce = document.getElementsByTagName('script').item(0).getAttribute('nonce') || null;
+                var scripts = document.getElementsByTagName('script'),
+                    i, n, nonce = null;
+
+                for (i = 0, n = scripts.length; i < n; i++) {
+                    if (/^((text|application)\/javascript)?$/i.test(scripts.item(i).type) && scripts.item(i).nonce) {
+                        nonce = scripts.item(i).nonce;
+                        break;
+                    }
+                }
 
                 if (config.csp || nonce) {
                     builder.addServiceDefinition('cspAgent', {
