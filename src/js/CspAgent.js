@@ -19,7 +19,12 @@ _context.invoke('Nittro.Page', function () {
         },
 
         _handleResponse: function (data, evt) {
-            var m = /(?:^|;\s*)script-src\s[^;]*'nonce-([^']+)'/.exec(evt.data.response.getHeader('Content-Security-Policy') || evt.data.response.getHeader('Content-Security-Policy-Report-Only') || '');
+            if ('redirect' in evt.data.response.getPayload()) {
+                return;
+            }
+
+            var h = evt.data.response.getHeader('Content-Security-Policy') || evt.data.response.getHeader('Content-Security-Policy-Report-Only') || '',
+                m = /(?:^|;\s*)script-src\s[^;]*'nonce-([^']+)'/.exec(h);
 
             if (m) {
                 data.nonce = m[1];
