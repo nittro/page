@@ -31,27 +31,10 @@ _context.invoke('Nittro.Page', function () {
             } else {
                 data.nonce = false;
             }
-
-            if (data.pending) {
-                data.pending();
-            }
         },
 
         _handleSnippets: function (data, evt) {
-            if (data.nonce !== null) {
-                this._handleChangeset(evt.data.changeset, data.nonce);
-            } else {
-                evt.waitFor(this._scheduleHandleChangeset(evt.data.changeset, data));
-            }
-        },
-
-        _scheduleHandleChangeset: function (changeset, data) {
-            return new Promise(function (fulfill) {
-                data.pending = function () {
-                    this._handleChangeset(changeset, data.nonce);
-                    fulfill();
-                }.bind(this);
-            }.bind(this));
+            this._handleChangeset(evt.data.changeset, data.nonce);
         },
 
         _handleChangeset: function (changeset, nonce) {

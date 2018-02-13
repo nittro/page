@@ -27,11 +27,15 @@ _context.invoke('Nittro.Page', function(Arrays) {
                 request: this._.ajax.createRequest(evt.data.transaction.getUrl(), evt.data.context.method, evt.data.context.data)
             };
 
-            evt.data.transaction.on('dispatch', function(evt) { evt.waitFor(this._dispatch(evt.target, data)); }.bind(this));
+            evt.data.transaction.on('dispatch', this._dispatch.bind(this, data));
             evt.data.transaction.on('abort', this._abort.bind(this, data));
         },
 
-        _dispatch: function(transaction, data) {
+        _dispatch: function(data, evt) {
+            evt.waitFor(Promise.resolve().then(this._doDispatch.bind(this, evt.target, data)));
+        },
+
+        _doDispatch: function (transaction, data) {
             return transaction.trigger('ajax-request', { request: data.request })
                 .then(this._.ajax.dispatch.bind(this._.ajax, data.request))
                 .then(this._handleResponse.bind(this, transaction, data));
@@ -41,7 +45,11 @@ _context.invoke('Nittro.Page', function(Arrays) {
             data.request.abort();
         },
 
-        _handleResponse: function(transaction, data, response) {
+        _handleResponse: function (transaction, data, response) {
+            return Promise.resolve().then(this._doHandleResponse.bind(this, transaction, data, response));
+        },
+
+        _doHandleResponse: function(transaction, data, response) {
             return transaction.trigger('ajax-response', { response: response })
                 .then(function() {
                     var payload = response.getPayload();

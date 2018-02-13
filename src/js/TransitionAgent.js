@@ -5,8 +5,6 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
 
         this._.page = page;
         this._.options = Arrays.mergeTree({}, TransitionAgent.defaults, options);
-        this._.ready = true;
-        this._.queue = [];
 
         this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
@@ -51,7 +49,6 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
                 if (changeset.add.hasOwnProperty(id)) {
                     DOM.addClass(changeset.add[id].content, 'nittro-dynamic-add', 'nittro-transition-middle');
                     data.elements.push(changeset.add[id].content);
-
                 }
             }
 
@@ -61,15 +58,14 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
         },
 
         _transitionOut: function (data) {
-            return this._enqueue(data.elements.concat(data.removeTargets), 'out');
-
+            return this._transition(data.elements.concat(data.removeTargets), 'out');
         },
 
         _transitionIn: function (data, aborting) {
             var elements = aborting ? data.elements.concat(data.removeTargets) : data.elements;
 
             if (elements.length) {
-                return this._enqueue(elements, 'in')
+                return this._transition(elements, 'in')
                     .then(function () {
                         DOM.removeClass(elements, 'nittro-dynamic-add', 'nittro-dynamic-remove');
                     });
@@ -77,38 +73,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
             }
         },
 
-        _enqueue: function (elements, dir) {
-            if (!this._.ready) {
-                return new Promise(function (fulfill) {
-                    this._.queue.push([elements, dir, fulfill]);
-
-                }.bind(this));
-            }
-
-            this._.ready = false;
-            return this._transition(elements, dir);
-
-        },
-
         _transition: function(elements, dir) {
             return CSSTransitions.run(elements, {
                     add: 'nittro-transition-active nittro-transition-' + dir,
                     remove: 'nittro-transition-middle',
                     after: dir === 'out' ? 'nittro-transition-middle' : null
-                }, dir === 'in')
-                .then(function () {
-                    if (this._.queue.length) {
-                        var q = this._.queue.shift();
-
-                        this._transition(q[0], q[1]).then(function () {
-                            q[2](q[0]);
-
-                        });
-                    } else {
-                        this._.ready = true;
-
-                    }
-                }.bind(this));
+                }, dir === 'in');
         },
 
         _getTransitionTargets: function(context) {
