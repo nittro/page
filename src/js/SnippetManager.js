@@ -277,14 +277,13 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         },
 
         _getDynamicContainerParams: function (id) {
-            var container = this.getSnippet(id);
+            var container = this.getSnippet(id),
+                params = container.isContainer() ? container.getData('_snippet_container') : null;
 
-            if (!container.isContainer()) {
+            if (!params || params.sortCache === false) {
                 return Helpers.prepareDynamicContainer(container);
-
             } else {
-                return container.getData('_snippet_container');
-
+                return params;
             }
         },
 

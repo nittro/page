@@ -131,10 +131,6 @@ _context.invoke('Nittro.Page', function(DOM) {
         },
 
         _buildSortData: function (params, elem, changeset) {
-            if (params.sortCache === false) {
-                params.sort = DOM.getData(elem, 'dynamic-sort') || 'append';
-            }
-
             var sortData = {
                 descriptor: params.sort.trim().split(/\s*,\s*/g).map(Helpers._parseDescriptor.bind(null, params.id)),
                 snippets: {}
