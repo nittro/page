@@ -49,7 +49,7 @@ _context.invoke('Nittro.Page', function(Url) {
 
         dispatch: function() {
             this.trigger('dispatch')
-                .then(this._.fulfill, this._.reject);
+                .then(this._.fulfill, this._handleError.bind(this));
 
             return this;
         },
@@ -62,6 +62,13 @@ _context.invoke('Nittro.Page', function(Url) {
 
         then: function(onfulfilled, onrejected) {
             return this._.promise.then(onfulfilled, onrejected);
+        },
+
+        _handleError: function (err) {
+            this.trigger('error')
+                .then(function () {
+                    this._.reject(err);
+                }.bind(this));
         }
     });
 

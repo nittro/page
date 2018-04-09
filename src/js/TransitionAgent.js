@@ -26,6 +26,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
         },
 
         _dispatch: function(data, evt) {
+            evt.target.on('error', this._handleError.bind(this, data));
             evt.target.then(this._transitionIn.bind(this, data, false), this._transitionIn.bind(this, data, true));
 
             if (data.elements.length || data.removeTargets.length) {
@@ -52,6 +53,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays, CSSTransitions, undefined)
                 }
             }
 
+            if (data.transitionOut) {
+                evt.waitFor(data.transitionOut);
+            }
+        },
+
+        _handleError: function (data, evt) {
             if (data.transitionOut) {
                 evt.waitFor(data.transitionOut);
             }
