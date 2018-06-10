@@ -66,6 +66,7 @@ _context.invoke('Nittro.Page', function(Arrays) {
 
                         } else {
                             document.location.href = payload.redirect;
+                            return new Promise(function() {});
                         }
                     } else {
                         return data.request;
