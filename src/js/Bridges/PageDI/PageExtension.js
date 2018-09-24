@@ -16,6 +16,12 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                 i18n: {
                     connectionError: 'There was an error connecting to the server. Please check your internet connection and try again.',
                     unknownError: 'There was an error processing your request. Please try again later.'
+                },
+                scroll: {
+                    target: null,
+                    margin: 30,
+                    scrollDown: false,
+                    duration: 500
                 }
             }
         },
@@ -50,6 +56,14 @@ _context.invoke('Nittro.Page.Bridges.PageDI', function (Nittro) {
                     options: {
                         whitelistHistory: config.whitelistHistory
                     }
+                },
+                run: true
+            });
+
+            builder.addServiceDefinition('scrollAgent', {
+                factory: 'Nittro.Page.ScrollAgent()',
+                args: {
+                    options: config.scroll
                 },
                 run: true
             });

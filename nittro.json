@@ -9,6 +9,7 @@
             "src/js/HistoryAgent.js",
             "src/js/History.js",
             "src/js/TransitionAgent.js",
+            "src/js/ScrollAgent.js",
             "src/js/Transaction.js",
             "src/js/CspAgent.js",
             "src/js/GoogleAnalyticsHelper.js",

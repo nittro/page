@@ -34,9 +34,7 @@ _context.invoke('Nittro.Page', function() {
 
         _doApplyChangeset: function (transaction, changeset) {
             return transaction.trigger('snippets-apply', { changeset: changeset })
-                .then(function() {
-                    this._.snippetManager.applyChanges(changeset);
-                }.bind(this));
+                .then(this._.snippetManager.applyChanges.bind(this._.snippetManager, changeset));
         }
     });
 

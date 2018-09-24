@@ -16,7 +16,9 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
         },
 
         _initTransaction: function (evt) {
-            if ('history' in evt.data.context) {
+            if (evt.data.context.fromHistory) {
+                evt.data.transaction.setIsFromHistory();
+            } else if ('history' in evt.data.context) {
                 evt.data.transaction.setIsHistoryState(evt.data.context.history);
             } else if (evt.data.context.element) {
                 evt.data.transaction.setIsHistoryState(DOM.getData(evt.data.context.element, 'history', !this._.options.whitelistHistory));
@@ -47,10 +49,12 @@ _context.invoke('Nittro.Page', function(Arrays, DOM, Url) {
         _saveState: function (transaction, data) {
             if (transaction.getUrl().getOrigin() !== Url.fromCurrent().getOrigin() || transaction.isBackground()) {
                 transaction.setIsHistoryState(false);
-
             } else if (transaction.isHistoryState()) {
-                this._.history.push(transaction.getUrl().toAbsolute(), data.title);
+                data.state = {};
 
+                if (!transaction.trigger('history-save', data).isDefaultPrevented()) {
+                    this._.history.push(transaction.getUrl().toAbsolute(), data.title, data.state);
+                }
             }
 
             if (data.title) {

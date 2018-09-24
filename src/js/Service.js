@@ -61,12 +61,10 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
 
         getSnippet: function (id) {
             return this._.snippetManager.getSnippet(id);
-
         },
 
         isSnippet: function (elem) {
             return this._.snippetManager.isSnippet(elem);
-
         },
 
         _handleState: function (evt) {
@@ -77,7 +75,7 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             var url = Url.from(evt.data.url);
             this._.currentUrl = url;
 
-            this.open(url, 'get', null, {history: false})
+            this.open(url, 'get', null, {fromHistory: true})
                 .then(null, function () {
                     document.location.href = url.toAbsolute();
                 });
@@ -87,31 +85,28 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             if (document.readyState === 'loading') {
                 DOM.addListener(document, 'readystatechange', this._checkReady.bind(this));
                 return;
-
             }
 
             if (!this._.setup) {
                 this._.setup = true;
 
-                window.setTimeout(function () {
-                    this._.history.replace((window.history.location || window.location).href);
+                Promise.resolve().then(function () {
+                    this._.history.init();
                     this._.snippetManager.setup();
-
-                }.bind(this), 1);
+                    this.trigger('ready');
+                }.bind(this));
             }
         },
 
         _handleLinkClick: function(evt) {
             if (evt.defaultPrevented || evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey || evt.button > 0) {
                 return;
-
             }
 
             var link = DOM.closest(evt.target, 'a');
 
             if (!link || !this._checkLink(link) || !this._checkUrl(link.href)) {
                 return;
-
             }
 
             this.openLink(link, evt);
@@ -128,7 +123,6 @@ _context.invoke('Nittro.Page', function (Transaction, DOM, Arrays, Url) {
             });
 
             return this._dispatchTransaction(transaction);
-
         },
 
         _createRejectedTransaction: function (url, reason) {

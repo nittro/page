@@ -5,6 +5,7 @@ _context.invoke('Nittro.Page', function(Url) {
 
         this._.url = Url.from(url);
         this._.history = true;
+        this._.fromHistory = false;
         this._.background = false;
 
         this._.promise = new Promise(function(fulfill, reject) {
@@ -36,6 +37,15 @@ _context.invoke('Nittro.Page', function(Url) {
         setIsHistoryState: function(value) {
             this._.history = value;
             return this;
+        },
+
+        isFromHistory: function() {
+            return this._.fromHistory;
+        },
+
+        setIsFromHistory: function() {
+            this._.fromHistory = true;
+            this._.history = false;
         },
 
         isBackground: function() {
