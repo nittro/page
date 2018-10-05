@@ -213,14 +213,12 @@ _context.invoke('Nittro.Page', function (Helpers, Snippet, DOM, Arrays, undefine
         _applyRemove: function(snippets) {
             for (var id in snippets) {
                 if (snippets.hasOwnProperty(id)) {
-                    if (!snippets[id].isDescendant) {
+                    if (!snippets[id].isDescendant && snippets[id].element.parentNode) {
                         snippets[id].element.parentNode.removeChild(snippets[id].element);
-
                     }
 
                     if (id in this._.snippets) {
                         delete this._.snippets[id];
-
                     }
                 }
             }
