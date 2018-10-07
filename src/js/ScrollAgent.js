@@ -12,7 +12,8 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
         this._.anchor.style.left = 0;
         this._.anchor.style.top = 0;
         this._.anchor.style.width = '100%';
-        this._.anchor.style.height = 0;
+        this._.anchor.style.height = '1px';
+        this._.anchor.style.marginTop = '-1px';
 
         window.history.scrollRestoration = 'manual';
         this._.page.on('ready', this._init.bind(this));
