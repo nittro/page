@@ -46,7 +46,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
                     target: this._.options.target
                 };
 
-            this._.anchor.style.top = rect.bottom + 'px';
+            this._.anchor.style.top = data.previous + rect.bottom + 'px';
             document.body.appendChild(this._.anchor);
             evt.data.transaction.on('dispatch', this._dispatch.bind(this, data));
             evt.data.transaction.on('abort error', this._cleanup.bind(this));
@@ -79,12 +79,10 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
         },
 
         _handleResponse: function (data, evt) {
-            if (data.target === null) {
-                var payload = evt.data.response.getPayload();
+            var payload = evt.data.response.getPayload();
 
-                if ('scrollTo' in payload) {
-                    data.target = payload.scrollTo;
-                }
+            if ('scrollTo' in payload) {
+                data.target = payload.scrollTo;
             }
         },
 

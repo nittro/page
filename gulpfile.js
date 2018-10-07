@@ -23,7 +23,7 @@ gulp.task('test', function () {
         .pipe(less())
         .pipe(addsrc.append(files, {base: process.cwd()}))
         .pipe(jasmineBrowser.specRunner({console: true}))
-        .pipe(jasmineBrowser.headless());
+        .pipe(jasmineBrowser.headless({driver: 'phantomjs'}));
 });
 
-gulp.task('default', ['test']);
+gulp.task('default', gulp.series('test'));
