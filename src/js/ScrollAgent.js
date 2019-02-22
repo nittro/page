@@ -36,7 +36,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
             if ('scrollAgent' in state) {
                 target = state.scrollAgent.target;
-            } else if (location.hash.match(/^#./)) {
+            } else if (location.hash.match(/^#[^\s\[>+:.]+$/i)) {
                 target = this._resolveSingleTarget(location.hash);
             }
 
@@ -179,9 +179,11 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
             } else if (target === null) {
                 return 0;
             } else if (typeof target === 'string') {
-                target = DOM.find(target)[0];
-                target = target ? target.getBoundingClientRect() : null;
-                return target ? target.top + window.pageYOffset - this._.options.margin : 0;
+                if (target = DOM.find(target)[0]) {
+                    return target.getBoundingClientRect().top + window.pageYOffset - this._.options.margin;
+                } else {
+                    return 0;
+                }
             } else if (typeof target === 'number') {
                 return target;
             } else {
