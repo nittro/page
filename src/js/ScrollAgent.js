@@ -29,10 +29,17 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
         },
 
         _init: function () {
-            var state = this._.history.getState();
+            var state = this._.history.getState(),
+                hash, target;
 
             if ('scrollAgent' in state) {
-                this._scrollTo(state.scrollAgent.target, true);
+                target = state.scrollAgent.target;
+            } else if (hash = document.location.hash.replace(/^#/, '')) {
+                target = this._resolveSingleTarget(hash);
+            }
+
+            if (typeof target === 'number') {
+                this._scrollTo(target, true, true);
             }
         },
 
@@ -117,7 +124,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
             }
         },
 
-        _scrollTo: function (to, force) {
+        _scrollTo: function (to, force, instant) {
             var y0 = window.pageYOffset,
                 dy = to - y0,
                 t0 = Date.now(),
@@ -125,7 +132,13 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
                 a = this._.anchor;
 
             if (force || this._.options.scrollDown || dy < 0) {
-                window.requestAnimationFrame(step);
+                if (instant) {
+                    window.scrollTo(null, to);
+                } else {
+                    window.requestAnimationFrame(step);
+                }
+            } else {
+                this._cleanup();
             }
 
             function step() {
@@ -156,6 +169,22 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
             evt.data.state.scrollAgent = {
                 target: data.target
             };
+        },
+
+        _resolveSingleTarget: function(target) {
+            if (target === false) {
+                return false;
+            } else if (target === null) {
+                return 0;
+            } else if (typeof target === 'string' && target.match(/^[.#]\S/)) {
+                target = DOM.find(target)[0];
+                target = target ? target.getBoundingClientRect() : null;
+                return target ? target.top + window.pageYOffset - this._.options.margin : 0;
+            } else if (typeof target === 'number') {
+                return target;
+            } else {
+                return false;
+            }
         },
 
         _resolveTarget: function(data) {
