@@ -1,5 +1,7 @@
 _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
+    var location = window.history.location || window.location; // support for HTML5 history polyfill
+
     var ScrollAgent = _context.extend(function (page, history, options) {
         this._ = {
             page: page,
@@ -30,12 +32,12 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
 
         _init: function () {
             var state = this._.history.getState(),
-                hash, target;
+                target;
 
             if ('scrollAgent' in state) {
                 target = state.scrollAgent.target;
-            } else if (hash = document.location.hash.replace(/^#/, '')) {
-                target = this._resolveSingleTarget(hash);
+            } else if (location.hash.match(/^#./)) {
+                target = this._resolveSingleTarget(location.hash);
             }
 
             if (typeof target === 'number') {
@@ -176,7 +178,7 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
                 return false;
             } else if (target === null) {
                 return 0;
-            } else if (typeof target === 'string' && target.match(/^[.#]\S/)) {
+            } else if (typeof target === 'string') {
                 target = DOM.find(target)[0];
                 target = target ? target.getBoundingClientRect() : null;
                 return target ? target.top + window.pageYOffset - this._.options.margin : 0;
