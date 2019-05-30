@@ -17,7 +17,9 @@ _context.invoke('Nittro.Page', function (DOM, Arrays) {
         this._.anchor.style.height = '1px';
         this._.anchor.style.marginTop = '-1px';
 
-        window.history.scrollRestoration = 'manual';
+        if ('scrollRestoration' in window.history) {
+            window.history.scrollRestoration = 'manual';
+        }
         this._.page.on('ready', this._init.bind(this));
         this._.page.on('transaction-created', this._initTransaction.bind(this));
     }, {
